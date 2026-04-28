@@ -9,6 +9,8 @@ import {RitualGenesis} from "../src/RitualGenesis.sol";
  * @notice Deploys RitualGenesis to Ritual Chain (Chain ID 1979).
  *
  * Usage:
+ *   export BASE_URI="ipfs://bafybeidqgl3nbnizulf52qziqoliitvzzot42qlcgkb6ithrkgsozi63he/"
+ *
  *   forge script script/Deploy.s.sol:Deploy \
  *     --rpc-url https://rpc.ritualfoundation.org \
  *     --broadcast \
@@ -20,17 +22,21 @@ import {RitualGenesis} from "../src/RitualGenesis.sol";
  *   3. Optionally verify: forge verify-contract --chain 1979 ...
  */
 contract Deploy is Script {
+    string internal constant DEFAULT_BASE_URI =
+        "ipfs://bafybeidqgl3nbnizulf52qziqoliitvzzot42qlcgkb6ithrkgsozi63he/";
+
     function run() external {
         uint256 deployerPK = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPK);
 
-        // Start with a placeholder base URI — update after IPFS upload
-        string memory baseURI = "ipfs://bafybeidqgl3nbnizulf52qziqoliitvzzot42qlcgkb6ithrkgsozi63he/";
+        // Use BASE_URI from env if provided, otherwise fall back to known metadata CID.
+        string memory baseURI = vm.envOr("BASE_URI", DEFAULT_BASE_URI);
 
         RitualGenesis nft = new RitualGenesis(baseURI);
 
         console.log("RitualGenesis deployed to:", address(nft));
         console.log("Deployer:", vm.addr(deployerPK));
+        console.log("Base URI:", baseURI);
         console.log("Max supply:", nft.MAX_SUPPLY());
         console.log("Mint price:", nft.MINT_PRICE());
 

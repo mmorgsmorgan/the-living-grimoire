@@ -2,13 +2,13 @@ import { type Abi } from "viem";
 
 /**
  * NFT contract configuration.
- * Replace NFT_CONTRACT_ADDRESS with your deployed contract address.
+ * Set NEXT_PUBLIC_NFT_CONTRACT to override this default address.
  * The ABI exposes the two key functions: totalSupply() and mint().
  */
 
 export const NFT_CONTRACT_ADDRESS =
   (process.env.NEXT_PUBLIC_NFT_CONTRACT as `0x${string}`) ??
-  "0x0000000000000000000000000000000000000000";
+  "0xb26e453CAF6EAa68248447052A0AC75a84650312";
 
 /** Total number of NFTs in the collection */
 export const MAX_SUPPLY = 99;
@@ -59,6 +59,13 @@ export const NFT_ABI = [
     name: "ownerOf",
     inputs: [{ name: "tokenId", type: "uint256" }],
     outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "hasMinted",
+    inputs: [{ name: "wallet", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
     stateMutability: "view",
   },
   {

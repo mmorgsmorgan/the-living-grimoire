@@ -54,6 +54,7 @@ contract RitualGenesis is ERC721, Ownable {
 
     error SoldOut();
     error InsufficientPayment(uint256 sent, uint256 required);
+    error InvalidBaseURI();
     error WithdrawFailed();
 
     // ============================================================
@@ -64,6 +65,7 @@ contract RitualGenesis is ERC721, Ownable {
         ERC721("Ritual Genesis", "RGEN")
         Ownable(msg.sender)
     {
+        _validateBaseURI(baseURI);
         _baseTokenURI = baseURI;
     }
 
@@ -117,6 +119,7 @@ contract RitualGenesis is ERC721, Ownable {
      * @param newBaseURI New IPFS or HTTP base URI (e.g., "ipfs://QmXxx/")
      */
     function setBaseURI(string calldata newBaseURI) external onlyOwner {
+        _validateBaseURI(newBaseURI);
         _baseTokenURI = newBaseURI;
         emit BaseURIUpdated(newBaseURI);
     }
@@ -151,4 +154,9 @@ contract RitualGenesis is ERC721, Ownable {
 
     /// @notice Accept RITUAL sent directly to the contract
     receive() external payable {}
+
+    function _validateBaseURI(string memory baseURI) internal pure {
+        bytes memory b = bytes(baseURI);
+        if (b.length == 0 || b[b.length - 1] != "/") revert InvalidBaseURI();
+    }
 }

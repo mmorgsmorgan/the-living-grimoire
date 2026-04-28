@@ -5,6 +5,7 @@ import { decodeEventLog, encodeFunctionData, parseEther } from "viem";
 import { useState, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import { NFT_ABI, NFT_CONTRACT_ADDRESS, MINT_PRICE_ETH, MAX_SUPPLY } from "@/lib/contract";
+import { type MintedNft, resolveMintedNft } from "@/lib/nftMetadata";
 
 /**
  * useMint — handles the NFT mint transaction lifecycle.
@@ -16,27 +17,14 @@ import { NFT_ABI, NFT_CONTRACT_ADDRESS, MINT_PRICE_ETH, MAX_SUPPLY } from "@/lib
  */
 export type MintStatus = "idle" | "minting" | "confirming" | "success" | "error";
 
-export type NftTrait = {
-  trait_type: string;
-  value: string;
-};
-
-export type MintedNft = {
-  tokenId: number;
-  tokenURI: string;
-  metadataURI: string;
-  name?: string;
-  description?: string;
-  image?: string;
-  attributes: NftTrait[];
-};
-
 export function useMint({
   onSuccess,
   isSoldOut,
+  hasMintedAlready,
 }: {
   onSuccess?: (mintedNft?: MintedNft) => void;
   isSoldOut: boolean;
+  hasMintedAlready: boolean;
 }) {
   const { isConnected, address } = useAccount();
   const publicClient = usePublicClient();
@@ -63,6 +51,10 @@ export function useMint({
     }
     if (isSoldOut) {
       toast.error("Sold out! All 99 NFTs have been minted.");
+      return;
+    }
+    if (hasMintedAlready) {
+      toast.error("This wallet already minted its NFT.");
       return;
     }
 
@@ -120,52 +112,27 @@ export function useMint({
             topics: transferLog.topics,
           });
           const tokenId = Number(decoded.args.tokenId);
-
-          const tokenURI = await publicClient.readContract({
-            address: NFT_CONTRACT_ADDRESS,
-            abi: NFT_ABI,
-            functionName: "tokenURI",
-            args: [BigInt(tokenId)],
-          });
-
-          let metadata = null;
-          let metadataURI = "";
-
-          // Try up to 3 different gateways
-          for (let g = 0; g < 3; g++) {
-            metadataURI = normalizeUri(tokenURI, g);
-            metadata = await fetchJson<{
-              name?: string;
-              description?: string;
-              image?: string;
-              attributes?: Array<{ trait_type?: string; value?: unknown }>;
-            }>(metadataURI);
-
-            if (metadata) break;
-          }
-
-          if (!metadata) throw new Error("Metadata fetch failed after multiple attempts.");
-
-          const attributes =
-            metadata?.attributes
-              ?.filter((item) => item?.trait_type && item?.value !== undefined)
-              .map((item) => ({
-                trait_type: String(item.trait_type),
-                value: String(item.value),
-              })) ?? [];
-
-          resolvedMintedNft = {
-            tokenId,
-            tokenURI,
-            metadataURI,
-            name: metadata?.name,
-            description: metadata?.description,
-            image: metadata?.image ? normalizeUri(metadata.image) : undefined,
-            attributes,
-          };
+          resolvedMintedNft = (await resolveMintedNft(publicClient, tokenId)) ?? undefined;
         } catch {
           // Mint can still succeed even if metadata resolution fails.
-          resolvedMintedNft = undefined;
+          // Keep a minimal token record so the UI can still enforce one mint per wallet
+          // and recover full metadata in a follow-up on-chain read.
+          try {
+            const decoded = decodeEventLog({
+              abi: NFT_ABI,
+              data: transferLog.data,
+              topics: transferLog.topics,
+            });
+            const tokenId = Number(decoded.args.tokenId);
+            resolvedMintedNft = {
+              tokenId,
+              tokenURI: "",
+              metadataURI: "",
+              attributes: [],
+            };
+          } catch {
+            resolvedMintedNft = undefined;
+          }
         }
       }
 
@@ -179,7 +146,7 @@ export function useMint({
       setErrorMessage(message);
       toast.error(message, { id: toastId, duration: 6000 });
     }
-  }, [address, isConnected, isSoldOut, onSuccess, publicClient, sendTransactionAsync]);
+  }, [address, hasMintedAlready, isConnected, isSoldOut, onSuccess, publicClient, sendTransactionAsync]);
 
   const reset = useCallback(() => {
     setStatus("idle");
@@ -242,50 +209,4 @@ function parseError(err: unknown): string {
   }
 
   return error.details ?? error.message ?? "Transaction failed. Please try again.";
-}
-
-function normalizeUri(uri: string, gatewayIndex = 0): string {
-  if (!uri) return uri;
-
-  const gateways = [
-    "https://ipfs.io/ipfs/",
-    "https://cloudflare-ipfs.com/ipfs/",
-    "https://gateway.pinata.cloud/ipfs/",
-    "https://dweb.link/ipfs/",
-  ];
-
-  const cleanUri = uri.startsWith("ipfs://") ? uri.slice("ipfs://".length) : uri;
-
-  // If it's already an HTTP link, just return it (unless it's an ipfs.io link we want to swap)
-  if (cleanUri.startsWith("http")) {
-    // If it's a known slow gateway, we might want to try another one,
-    // but for now let's just return it if it's already a full URL.
-    return cleanUri;
-  }
-
-  return `${gateways[gatewayIndex % gateways.length]}${cleanUri}`;
-}
-
-async function fetchJson<T>(url: string, retries = 3): Promise<T | null> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000), // 10s timeout
-      });
-      if (response.ok) {
-        return (await response.json()) as T;
-      }
-    } catch (err) {
-      console.warn(`Fetch attempt ${i + 1} failed for ${url}:`, err);
-    }
-
-    // If it's a gateway error (like 504), or timeout, we might want to try a different gateway
-    // but fetchJson currently takes a specific URL.
-    // The retry logic here handles transient network issues.
-    if (i < retries - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
-    }
-  }
-  return null;
 }

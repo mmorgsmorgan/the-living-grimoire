@@ -12,7 +12,8 @@ import { useMintProgress } from "@/hooks/useMintProgress";
  * without a second contract read.
  */
 export default function Home() {
-  const { minted } = useMintProgress();
+  const mintProgress = useMintProgress();
+  const { minted } = mintProgress;
 
   return (
     <main className="min-h-screen ritual-mesh">
@@ -26,7 +27,7 @@ export default function Home() {
 
       <Header />
       <HeroSection />
-      <MintSection />
+      <MintSection mintProgress={mintProgress} />
       <GallerySection mintedCount={minted} />
 
       {/* Footer */}
