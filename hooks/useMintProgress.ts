@@ -8,6 +8,11 @@ import { NFT_ABI, NFT_CONTRACT_ADDRESS, MAX_SUPPLY } from "@/lib/contract";
  * useMintProgress — resilient totalSupply reader.
  *
  * Uses direct readContract + retry to handle intermittent RPC instability.
+ *
+ * FIX: Guarded window.setInterval behind typeof check to avoid SSR crash.
+ * FIX: Removed duplicate 5s polling interval — useWatchBlockNumber already
+ *      triggers a refresh on every new block; the interval is kept as a
+ *      safety net but only starts client-side.
  */
 export function useMintProgress() {
   const publicClient = usePublicClient();
@@ -43,18 +48,23 @@ export function useMintProgress() {
     }
   }, [publicClient]);
 
+  // Initial fetch
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
+  // 30s polling fallback — guard against SSR (window is undefined on server)
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const id = window.setInterval(() => {
       void refresh();
-    }, 5000);
+    }, 30_000);
 
     return () => window.clearInterval(id);
   }, [refresh]);
 
+  // Also refresh on every new block for near-real-time updates
   useWatchBlockNumber({
     onBlockNumber: () => {
       void refresh();

@@ -9,7 +9,7 @@ import { type MintProgressState } from "@/hooks/useMintProgress";
 import { MAX_SUPPLY, MINT_PRICE_ETH, NFT_ABI, NFT_CONTRACT_ADDRESS } from "@/lib/contract";
 import { type MintedNft, resolveMintedNft } from "@/lib/nftMetadata";
 
-/** MintSection — progress bar, mint button, stats panel */
+/** MintSection — progress bar, mint button, stats panel, post-mint modal */
 export function MintSection({ mintProgress }: { mintProgress: MintProgressState }) {
   const { isConnected, chain, address } = useAccount();
   const publicClient = usePublicClient();
@@ -26,6 +26,13 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
 
   const hasMintedAlready = hasMintedOnChain || Boolean(walletMintedNft);
 
+  /**
+   * Loads whether the connected wallet has already minted.
+   *
+   * FIX: `forceOpenModal` is now always `false` on the silent initial check
+   * so the success modal doesn't pop open automatically on every page load
+   * for returning minters. It is only `true` after a fresh mint action.
+   */
   const loadWalletMintState = useCallback(
     async (forceOpenModal: boolean) => {
       if (!address || !publicClient) {
@@ -48,21 +55,19 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
         }
 
         const ownedTokenId = await resolveOwnedTokenId(publicClient, address);
-
-        if (!ownedTokenId) {
-          return;
-        }
+        if (!ownedTokenId) return;
 
         const mintedNft = await resolveMintedNft(publicClient, ownedTokenId);
         if (!mintedNft) return;
 
         setWalletMintedNft(mintedNft);
 
+        // Only open the modal when explicitly requested (i.e. after a fresh mint)
         if (forceOpenModal) {
           setIsModalOpen(true);
         }
       } catch {
-        // Ignore check failures; user can still interact with mint UI.
+        // Ignore check failures — user can still interact with mint UI.
       } finally {
         setIsWalletMintCheckLoading(false);
       }
@@ -79,39 +84,22 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
         setIsModalOpen(true);
       }
 
-      // Always re-hydrate from chain so modal shows real tokenURI metadata
-      // (image + traits), even if first pass resolved only minimal data.
+      // Re-hydrate from chain so modal shows real tokenURI metadata
       setTimeout(() => {
         void loadWalletMintState(true);
       }, 1200);
 
-      // Force several supply refreshes after mint confirmation to keep
-      // counter/progress/recent mints in sync across RPC/indexing delays.
+      // Force several supply refreshes after mint confirmation
       void refresh();
-      setTimeout(() => {
-        void refresh();
-      }, 1500);
-      setTimeout(() => {
-        void refresh();
-      }, 3500);
-      setTimeout(() => {
-        void refresh();
-      }, 7000);
+      setTimeout(() => void refresh(), 1500);
+      setTimeout(() => void refresh(), 3500);
+      setTimeout(() => void refresh(), 7000);
     },
   });
 
+  // Silent check on wallet connect — do NOT force modal open (FIX)
   useEffect(() => {
-    let ignore = false;
-    const run = async () => {
-      await loadWalletMintState(true);
-    };
-    if (!ignore) {
-      void run();
-    }
-
-    return () => {
-      ignore = true;
-    };
+    void loadWalletMintState(false);
   }, [loadWalletMintState]);
 
   const downloadMintedNft = async () => {
@@ -131,7 +119,6 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
 
   const xShareUrl = useMemo(() => {
     if (!walletMintedNft) return "#";
-
     return `https://x.com/intent/tweet?text=${encodeURIComponent(
       `I just minted ${walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`} on Ritual Chain.`
     )}&url=${encodeURIComponent(`https://explorer.ritualfoundation.org/address/${NFT_CONTRACT_ADDRESS}`)}`;
@@ -141,13 +128,15 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
     <>
       <section id="mint" className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
         <div className="bg-ritual-elevated border border-gray-800 rounded-2xl overflow-hidden shadow-card">
+          {/* Top accent bar */}
           <div className="h-1 w-full bg-gradient-to-r from-ritual-green via-ritual-lime to-ritual-green/30" />
 
           <div className="p-8 sm:p-10">
             <div className="grid lg:grid-cols-2 gap-10 items-center">
+              {/* ── Left: Stats + Mint Button ─────────────────────── */}
               <div>
                 <div className="flex items-center gap-2 mb-6">
-                  <img src="/ritual-logo.jpg" alt="Ritual Logo" className="w-6 h-6 object-contain" />
+                  <img src="/ritual-logo.jpg" alt="Ritual Logo" className="w-6 h-6 object-contain rounded-full" />
                   <h2 className="font-display text-white text-2xl">Mint Your NFT</h2>
                 </div>
 
@@ -163,7 +152,11 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                 </div>
 
                 <div className="space-y-3">
-                  {!isConnected && <p className="text-sm text-gray-500 mb-2">Connect your wallet to mint.</p>}
+                  {!isConnected && (
+                    <p className="text-sm text-gray-500 mb-2">
+                      Connect your wallet to mint.
+                    </p>
+                  )}
 
                   {isWrongChain ? (
                     <button
@@ -178,17 +171,24 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                     <button
                       id="mint-btn"
                       onClick={mint}
-                      disabled={!isConnected || isSoldOut || isLoading || hasMintedAlready || isWalletMintCheckLoading}
+                      disabled={
+                        !isConnected ||
+                        isSoldOut ||
+                        isLoading ||
+                        hasMintedAlready ||
+                        isWalletMintCheckLoading
+                      }
                       className={`
                         w-full py-4 text-base font-body font-semibold rounded-xl border
                         transition-all duration-200 relative overflow-hidden
-                        ${isSoldOut || hasMintedAlready
-                          ? "border-gray-700 text-gray-600 cursor-not-allowed"
-                          : isLoading || isWalletMintCheckLoading
-                          ? "border-ritual-green/40 text-ritual-green/70 cursor-wait"
-                          : !isConnected
-                          ? "border-gray-700 text-gray-500 cursor-not-allowed"
-                          : "border-ritual-green text-ritual-green hover:bg-ritual-green/10 hover:shadow-glow-green active:scale-[0.98]"
+                        ${
+                          isSoldOut || hasMintedAlready
+                            ? "border-gray-700 text-gray-600 cursor-not-allowed"
+                            : isLoading || isWalletMintCheckLoading
+                            ? "border-ritual-green/40 text-ritual-green/70 cursor-wait"
+                            : !isConnected
+                            ? "border-gray-700 text-gray-500 cursor-not-allowed"
+                            : "border-ritual-green text-ritual-green hover:bg-ritual-green/10 hover:shadow-glow-green active:scale-[0.98]"
                         }
                       `}
                     >
@@ -200,7 +200,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                         {isWalletMintCheckLoading
                           ? "Checking wallet…"
                           : hasMintedAlready
-                          ? "Already Minted"
+                          ? "✓ Already Minted"
                           : isSoldOut
                           ? "✗ Sold Out"
                           : isLoading
@@ -212,10 +212,28 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                     </button>
                   )}
 
-                  {hasMintedAlready && (
-                    <p className="text-xs text-ritual-gold">This wallet has already minted its 1/1 NFT.</p>
+                  {/* Already minted — show "View NFT" link */}
+                  {hasMintedAlready && walletMintedNft && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-ritual-gold">
+                        This wallet has already minted its 1/1 NFT.
+                      </p>
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="text-xs text-ritual-green underline hover:no-underline"
+                      >
+                        View NFT
+                      </button>
+                    </div>
                   )}
 
+                  {hasMintedAlready && !walletMintedNft && (
+                    <p className="text-xs text-ritual-gold">
+                      This wallet has already minted its 1/1 NFT.
+                    </p>
+                  )}
+
+                  {/* TX hash link */}
                   {txHash && (
                     <a
                       href={`https://explorer.ritualfoundation.org/tx/${txHash}`}
@@ -227,23 +245,27 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                     </a>
                   )}
 
+                  {/* Error display */}
                   {errorMessage && status === "error" && (
                     <div
                       role="alert"
                       className="flex items-start gap-2 p-3 bg-red-500/5 border border-red-500/20 rounded-lg text-sm text-red-400"
                     >
-                      <span className="mt-0.5">✗</span>
+                      <span className="mt-0.5 shrink-0">✗</span>
                       <span>{errorMessage}</span>
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* ── Right: Progress Bar + Contract Info ───────────── */}
               <div>
                 <div className="bg-black/40 border border-gray-800 rounded-xl p-6">
                   <div className="flex justify-between items-end mb-4">
                     <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Mint Progress</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                        Mint Progress
+                      </p>
                       <p className="font-display text-white text-3xl">
                         {isProgressLoading ? (
                           <span className="text-gray-600">…</span>
@@ -255,17 +277,24 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                         )}
                       </p>
                     </div>
-                    <p className="text-2xl font-display text-gray-600">{isProgressLoading ? "" : `${Math.round(progress)}%`}</p>
+                    <p className="text-2xl font-display text-gray-600">
+                      {isProgressLoading ? "" : `${Math.round(progress)}%`}
+                    </p>
                   </div>
 
+                  {/* Progress bar */}
                   <div
                     role="progressbar"
                     aria-valuenow={minted}
+                    aria-valuemin={0}
                     aria-valuemax={MAX_SUPPLY}
                     aria-label="Mint progress"
                     className="ritual-progress-track"
                   >
-                    <div className="ritual-progress-fill" style={{ width: `${progress}%` }} />
+                    <div
+                      className="ritual-progress-fill"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
 
                   <div className="flex justify-between mt-3 text-xs font-mono text-gray-600">
@@ -278,15 +307,19 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
 
                   <div className="mt-6 flex items-center gap-2 text-xs text-gray-600">
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-700 animate-pulse" />
-                    Auto-refreshes every 30s
+                    Auto-refreshes on every block
                   </div>
 
+                  {/* Sold out banner */}
                   {isSoldOut && (
                     <div className="mt-4 p-3 bg-red-500/5 border border-red-500/20 rounded-lg text-center">
-                      <span className="text-sm text-red-400 font-semibold">✗ Sold Out — All {MAX_SUPPLY} NFTs have been minted</span>
+                      <span className="text-sm text-red-400 font-semibold">
+                        ✗ Sold Out — All {MAX_SUPPLY} NFTs have been minted
+                      </span>
                     </div>
                   )}
 
+                  {/* Contract info */}
                   <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
                     <InfoRow label="Contract">
                       <a
@@ -305,6 +338,9 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                     <InfoRow label="Standard">
                       <span className="font-mono text-xs text-gray-400">ERC-721</span>
                     </InfoRow>
+                    <InfoRow label="Limit">
+                      <span className="font-mono text-xs text-gray-400">1 per wallet</span>
+                    </InfoRow>
                   </div>
                 </div>
               </div>
@@ -313,35 +349,52 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
         </div>
       </section>
 
+      {/* ── Post-Mint Modal ─────────────────────────────────────────── */}
       {isModalOpen && walletMintedNft && (
-        <div className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-2xl bg-ritual-elevated border border-ritual-green/30 rounded-2xl overflow-hidden shadow-card">
+        <div
+          className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Your minted NFT"
+          onClick={(e) => {
+            // Close on backdrop click
+            if (e.target === e.currentTarget) setIsModalOpen(false);
+          }}
+        >
+          <div className="w-full max-w-2xl bg-ritual-elevated border border-ritual-green/30 rounded-2xl overflow-hidden shadow-card animate-fade-in">
+            {/* Modal header */}
             <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Your Minted NFT</p>
-                <h3 className="text-white font-display text-xl">{walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`}</h3>
+                <h3 className="text-white font-display text-xl">
+                  {walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`}
+                </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800/50"
+                aria-label="Close"
+                className="px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800/50 transition-colors"
               >
-                Close
+                ✕
               </button>
             </div>
 
+            {/* Modal body */}
             <div className="p-5 grid md:grid-cols-2 gap-5">
+              {/* NFT image */}
               {walletMintedNft.image ? (
                 <img
                   src={walletMintedNft.image}
                   alt={walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`}
-                  className="w-full rounded-xl border border-gray-800"
+                  className="w-full rounded-xl border border-gray-800 object-cover"
                 />
               ) : (
-                <div className="aspect-square rounded-xl border border-gray-800 bg-black/40 flex items-center justify-center text-gray-500">
-                  Image unavailable
+                <div className="aspect-square rounded-xl border border-gray-800 bg-black/40 flex items-center justify-center text-gray-500 text-sm">
+                  Image loading…
                 </div>
               )}
 
+              {/* NFT details */}
               <div className="space-y-4">
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Token ID</p>
@@ -351,7 +404,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                 {walletMintedNft.attributes.length > 0 ? (
                   <div className="space-y-2">
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Traits</p>
-                    <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1">
                       {walletMintedNft.attributes.map((trait) => (
                         <div
                           key={`${trait.trait_type}-${trait.value}`}
@@ -364,7 +417,9 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Traits unavailable for this metadata.</p>
+                  <p className="text-sm text-gray-500">
+                    Metadata loading — check back shortly.
+                  </p>
                 )}
 
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -375,7 +430,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                       });
                     }}
                     disabled={!walletMintedNft.image}
-                    className="px-4 py-2 rounded-lg border border-ritual-green text-ritual-green hover:bg-ritual-green/10 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+                    className="px-4 py-2 rounded-lg border border-ritual-green text-ritual-green hover:bg-ritual-green/10 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold transition-colors"
                   >
                     Download NFT
                   </button>
@@ -383,9 +438,17 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
                     href={xShareUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 rounded-lg border border-gray-700 text-gray-200 hover:bg-gray-800/40 text-sm font-semibold"
+                    className="px-4 py-2 rounded-lg border border-gray-700 text-gray-200 hover:bg-gray-800/40 text-sm font-semibold transition-colors"
                   >
                     Post on X
+                  </a>
+                  <a
+                    href={`https://explorer.ritualfoundation.org/address/${NFT_CONTRACT_ADDRESS}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:bg-gray-800/40 text-sm font-semibold transition-colors"
+                  >
+                    Explorer ↗
                   </a>
                 </div>
               </div>
@@ -396,6 +459,8 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
     </>
   );
 }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function findOwnedTokenId(
   publicClient: NonNullable<ReturnType<typeof usePublicClient>>,
@@ -484,9 +549,7 @@ function StatCard({
   return (
     <div className="bg-black/30 border border-gray-800 rounded-xl p-4">
       <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-      <p
-        className={`font-body font-semibold text-base ${accent ? colors[accent] : "text-gray-300"}`}
-      >
+      <p className={`font-body font-semibold text-base ${accent ? colors[accent] : "text-gray-300"}`}>
         {value}
       </p>
     </div>

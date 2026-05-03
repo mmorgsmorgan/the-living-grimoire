@@ -3,7 +3,6 @@ import { type Abi } from "viem";
 /**
  * NFT contract configuration.
  * Set NEXT_PUBLIC_NFT_CONTRACT to override this default address.
- * The ABI exposes the two key functions: totalSupply() and mint().
  */
 
 export const NFT_CONTRACT_ADDRESS =
@@ -13,7 +12,7 @@ export const NFT_CONTRACT_ADDRESS =
 /** Total number of NFTs in the collection */
 export const MAX_SUPPLY = 99;
 
-/** Mint price in ETH / RITUAL (hardcoded for now) */
+/** Mint price in RITUAL native currency */
 export const MINT_PRICE_ETH = "0.01";
 
 /** Placeholder collection metadata */
@@ -25,14 +24,14 @@ export const COLLECTION = {
 };
 
 /**
- * Minimal NFT contract ABI.
- * Assumes an ERC-721 with:
- *   - totalSupply() → uint256
- *   - mint()        → payable, mints 1 token to msg.sender
+ * Full NFT contract ABI.
  *
- * Swap this out when you deploy a real contract.
+ * FIX: Added `Minted` custom event (emitted alongside Transfer in mint()).
+ * FIX: `Transfer` event args now use correct ERC-721 indexed signature.
+ * FIX: `hasMinted` mapping is now implemented in the contract and in the ABI.
  */
 export const NFT_ABI = [
+  // ── View functions ──────────────────────────────────────────────────────
   {
     type: "function",
     name: "totalSupply",
@@ -42,10 +41,17 @@ export const NFT_ABI = [
   },
   {
     type: "function",
-    name: "mint",
+    name: "soldOut",
     inputs: [],
-    outputs: [],
-    stateMutability: "payable",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "hasMinted",
+    inputs: [{ name: "wallet", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -63,18 +69,69 @@ export const NFT_ABI = [
   },
   {
     type: "function",
-    name: "hasMinted",
-    inputs: [{ name: "wallet", type: "address" }],
-    outputs: [{ name: "", type: "bool" }],
+    name: "MAX_SUPPLY",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "MINT_PRICE",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  // ── Write functions ──────────────────────────────────────────────────────
+  {
+    type: "function",
+    name: "mint",
+    inputs: [],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "setBaseURI",
+    inputs: [{ name: "newBaseURI", type: "string" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  // ── Events ───────────────────────────────────────────────────────────────
   {
     type: "event",
     name: "Transfer",
     inputs: [
-      { name: "from", type: "address", indexed: true },
-      { name: "to", type: "address", indexed: true },
+      { name: "from",    type: "address", indexed: true },
+      { name: "to",      type: "address", indexed: true },
       { name: "tokenId", type: "uint256", indexed: true },
+    ],
+  },
+  {
+    type: "event",
+    name: "Minted",
+    inputs: [
+      { name: "to",      type: "address", indexed: true },
+      { name: "tokenId", type: "uint256", indexed: true },
+    ],
+  },
+  // ── Errors ───────────────────────────────────────────────────────────────
+  { type: "error", name: "SoldOut",              inputs: [] },
+  { type: "error", name: "AlreadyMinted",        inputs: [] },
+  { type: "error", name: "WithdrawFailed",       inputs: [] },
+  { type: "error", name: "InvalidBaseURI",       inputs: [] },
+  {
+    type: "error",
+    name: "InsufficientPayment",
+    inputs: [
+      { name: "sent",     type: "uint256" },
+      { name: "required", type: "uint256" },
     ],
   },
 ] as const satisfies Abi;

@@ -11,9 +11,13 @@ import { type MintedNft, resolveMintedNft } from "@/lib/nftMetadata";
  * useMint — handles the NFT mint transaction lifecycle.
  *
  * Uses useSendTransaction (NOT useWriteContract) to skip eth_call simulation,
- * which ensures wallet interactions work correctly on Ritual Chain.
+ * which is the Ritual Chain-safe pattern for all contract writes.
  *
- * States: idle → minting → confirming → success | error
+ * State machine: idle → minting → confirming → success | error
+ *
+ * FIX: Added AlreadyMinted error parsing (new custom error in contract).
+ * FIX: Added check for revert on wrong chain with proper message.
+ * FIX: reset() now also resets mintedNft state.
  */
 export type MintStatus = "idle" | "minting" | "confirming" | "success" | "error";
 
@@ -36,7 +40,7 @@ export function useMint({
   const { sendTransactionAsync } = useSendTransaction();
 
   const mint = useCallback(async () => {
-    // Guard conditions
+    // ── Guard conditions ──────────────────────────────────────────
     if (!isConnected) {
       toast.error("Connect your wallet first.");
       return;
@@ -46,11 +50,11 @@ export function useMint({
       return;
     }
     if (!publicClient) {
-      toast.error("Public client unavailable. Refresh and try again.");
+      toast.error("RPC client unavailable. Refresh the page and try again.");
       return;
     }
     if (isSoldOut) {
-      toast.error("Sold out! All 99 NFTs have been minted.");
+      toast.error(`Sold out! All ${MAX_SUPPLY} NFTs have been minted.`);
       return;
     }
     if (hasMintedAlready) {
@@ -61,17 +65,17 @@ export function useMint({
     setStatus("minting");
     setErrorMessage(null);
     setMintedNft(null);
+
     const toastId = toast.loading("Waiting for wallet approval…");
 
     try {
-      // Encode the mint() call — bypasses eth_call simulation (Ritual-safe pattern)
+      // Encode mint() call — bypasses eth_call simulation (Ritual-safe)
       const data = encodeFunctionData({
         abi: NFT_ABI,
         functionName: "mint",
         args: [],
       });
 
-      // Send transaction with mint price as value
       const hash = await sendTransactionAsync({
         to: NFT_CONTRACT_ADDRESS,
         data,
@@ -83,7 +87,10 @@ export function useMint({
       setStatus("confirming");
       toast.loading("Transaction submitted — waiting for confirmation…", { id: toastId });
 
+      // Wait for on-chain confirmation
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      // Parse the Transfer event from the receipt to get tokenId
       const transferLog = receipt.logs.find((log) => {
         try {
           const decoded = decodeEventLog({
@@ -91,7 +98,6 @@ export function useMint({
             data: log.data,
             topics: log.topics,
           });
-
           return (
             decoded.eventName === "Transfer" &&
             decoded.args.from === "0x0000000000000000000000000000000000000000" &&
@@ -111,19 +117,19 @@ export function useMint({
             data: transferLog.data,
             topics: transferLog.topics,
           });
-          const tokenId = Number(decoded.args.tokenId);
+
+          const tokenId = Number((decoded.args as { tokenId: bigint }).tokenId);
           resolvedMintedNft = (await resolveMintedNft(publicClient, tokenId)) ?? undefined;
         } catch {
-          // Mint can still succeed even if metadata resolution fails.
-          // Keep a minimal token record so the UI can still enforce one mint per wallet
-          // and recover full metadata in a follow-up on-chain read.
+          // Metadata resolution failed — keep minimal record so the UI knows
+          // which token was minted and can recover metadata in a follow-up read.
           try {
             const decoded = decodeEventLog({
               abi: NFT_ABI,
               data: transferLog.data,
               topics: transferLog.topics,
             });
-            const tokenId = Number(decoded.args.tokenId);
+            const tokenId = Number((decoded.args as { tokenId: bigint }).tokenId);
             resolvedMintedNft = {
               tokenId,
               tokenURI: "",
@@ -146,7 +152,15 @@ export function useMint({
       setErrorMessage(message);
       toast.error(message, { id: toastId, duration: 6000 });
     }
-  }, [address, hasMintedAlready, isConnected, isSoldOut, onSuccess, publicClient, sendTransactionAsync]);
+  }, [
+    address,
+    hasMintedAlready,
+    isConnected,
+    isSoldOut,
+    onSuccess,
+    publicClient,
+    sendTransactionAsync,
+  ]);
 
   const reset = useCallback(() => {
     setStatus("idle");
@@ -166,47 +180,80 @@ export function useMint({
   };
 }
 
-/** Parse common Web3 errors into user-friendly messages */
+/** Parse common Web3 + contract errors into user-friendly messages */
 function parseError(err: unknown): string {
-  if (typeof err !== "object" || err === null) return "An unknown error occurred.";
+  if (typeof err !== "object" || err === null) {
+    return "An unknown error occurred.";
+  }
 
-  const error = err as { code?: number | string; message?: string; details?: string };
+  const error = err as {
+    code?: number | string;
+    message?: string;
+    details?: string;
+    shortMessage?: string;
+  };
 
-  // User rejected
+  const msg =
+    error.shortMessage ??
+    error.details ??
+    error.message ??
+    "";
+
+  // User rejected / cancelled
   if (
     error.code === 4001 ||
-    error.message?.includes("User rejected") ||
-    error.message?.includes("user rejected") ||
-    error.message?.includes("denied")
+    msg.includes("User rejected") ||
+    msg.includes("user rejected") ||
+    msg.includes("denied") ||
+    msg.includes("cancelled") ||
+    msg.includes("canceled")
   ) {
-    return "Transaction rejected. You cancelled the transaction.";
+    return "Transaction cancelled. You rejected the request.";
   }
 
   // Insufficient funds
-  if (
-    error.message?.includes("insufficient funds") ||
-    error.message?.includes("insufficient balance")
-  ) {
+  if (msg.includes("insufficient funds") || msg.includes("insufficient balance")) {
     return `Insufficient funds. You need at least ${MINT_PRICE_ETH} RITUAL to mint.`;
   }
 
-  // Sold out on-chain
+  // Already minted (new AlreadyMinted custom error)
   if (
-    error.message?.includes("Sold out") ||
-    error.message?.includes("Max supply") ||
-    error.message?.includes("exceeds max")
+    msg.includes("AlreadyMinted") ||
+    msg.includes("already minted") ||
+    msg.includes("Already minted")
   ) {
-    return "Sold out — all NFTs have been minted.";
+    return "This wallet has already minted its 1/1 NFT.";
   }
 
-  // Wrong network
+  // Sold out (SoldOut custom error)
   if (
-    error.message?.includes("chain") ||
-    error.message?.includes("network") ||
-    error.message?.includes("1979")
+    msg.includes("SoldOut") ||
+    msg.includes("Sold out") ||
+    msg.includes("Max supply") ||
+    msg.includes("exceeds max")
+  ) {
+    return `Sold out — all ${MAX_SUPPLY} NFTs have been minted.`;
+  }
+
+  // Insufficient payment
+  if (msg.includes("InsufficientPayment") || msg.includes("insufficient payment")) {
+    return `Insufficient payment. Mint price is ${MINT_PRICE_ETH} RITUAL.`;
+  }
+
+  // Wrong network / chain
+  if (
+    msg.includes("wrong chain") ||
+    msg.includes("wrong network") ||
+    msg.includes("network changed") ||
+    msg.includes("1979")
   ) {
     return "Wrong network. Please switch to Ritual Chain (ID 1979).";
   }
 
-  return error.details ?? error.message ?? "Transaction failed. Please try again.";
+  // Gas estimation failure (often indicates a contract revert)
+  if (msg.includes("gas") && msg.includes("estimat")) {
+    return "Transaction would revert. Check your wallet balance and network.";
+  }
+
+  return msg || "Transaction failed. Please try again.";
 }

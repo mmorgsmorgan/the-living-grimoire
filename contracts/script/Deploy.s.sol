@@ -8,20 +8,30 @@ import {RitualGenesis} from "../src/RitualGenesis.sol";
  * @title Deploy
  * @notice Deploys RitualGenesis to Ritual Chain (Chain ID 1979).
  *
- * Usage:
- *   export BASE_URI="ipfs://bafybeidqgl3nbnizulf52qziqoliitvzzot42qlcgkb6ithrkgsozi63he/"
+ * FIX: baseURI is now optional at deploy time. Pass an empty string "" to
+ *      deploy immediately and call setBaseURI() later once your IPFS CID
+ *      is known. This avoids blocking deployment on metadata upload.
  *
+ * Usage (with known IPFS CID):
+ *   export PRIVATE_KEY=0x...
+ *   export BASE_URI="ipfs://bafybeid.../\"
  *   forge script script/Deploy.s.sol:Deploy \
  *     --rpc-url https://rpc.ritualfoundation.org \
- *     --broadcast \
- *     -vvvv
+ *     --broadcast -vvvv
  *
- * After deployment:
- *   1. Copy the deployed address
- *   2. Update NEXT_PUBLIC_NFT_CONTRACT in frontend/.env.local
- *   3. Optionally verify: forge verify-contract --chain 1979 ...
+ * Usage (deploy first, set URI later):
+ *   export PRIVATE_KEY=0x...
+ *   forge script script/Deploy.s.sol:Deploy \
+ *     --rpc-url https://rpc.ritualfoundation.org \
+ *     --broadcast -vvvv
+ *
+ *   # Then once IPFS CID is ready:
+ *   cast send <CONTRACT_ADDR> "setBaseURI(string)" "ipfs://bafybeid.../" \
+ *     --rpc-url https://rpc.ritualfoundation.org \
+ *     --private-key $PRIVATE_KEY
  */
 contract Deploy is Script {
+    // Known metadata CID — change before mainnet deploy
     string internal constant DEFAULT_BASE_URI =
         "ipfs://bafybeidqgl3nbnizulf52qziqoliitvzzot42qlcgkb6ithrkgsozi63he/";
 
@@ -29,16 +39,24 @@ contract Deploy is Script {
         uint256 deployerPK = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPK);
 
-        // Use BASE_URI from env if provided, otherwise fall back to known metadata CID.
+        // Use BASE_URI env var if set; fall back to default CID.
+        // Pass empty string "" to deploy without setting a baseURI.
         string memory baseURI = vm.envOr("BASE_URI", DEFAULT_BASE_URI);
 
         RitualGenesis nft = new RitualGenesis(baseURI);
 
-        console.log("RitualGenesis deployed to:", address(nft));
-        console.log("Deployer:", vm.addr(deployerPK));
-        console.log("Base URI:", baseURI);
-        console.log("Max supply:", nft.MAX_SUPPLY());
-        console.log("Mint price:", nft.MINT_PRICE());
+        console.log("=== RitualGenesis Deployed ===");
+        console.log("Address  :", address(nft));
+        console.log("Deployer :", vm.addr(deployerPK));
+        console.log("Chain ID :", block.chainid);
+        console.log("Base URI :", baseURI);
+        console.log("Max Supply:", nft.MAX_SUPPLY());
+        console.log("Mint Price:", nft.MINT_PRICE());
+        console.log("");
+        console.log("Next steps:");
+        console.log("  1. Copy address above");
+        console.log("  2. Set NEXT_PUBLIC_NFT_CONTRACT in .env.local");
+        console.log("  3. If baseURI is empty, call setBaseURI() after IPFS upload");
 
         vm.stopBroadcast();
     }

@@ -6,19 +6,15 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
- * @title RitualGenesis
- * @notice ERC-721 NFT collection with a fixed supply of 99. Deployed on Ritual Chain (Chain ID 1979).
- * @dev Sequential minting — no randomness. Each mint gives the next token ID.
+ * @title  RitualGenesis
+ * @notice ERC-721 NFT collection — 99 unique genesis artifacts on Ritual Chain (ID 1979).
+ * @dev    Sequential minting, 1 per wallet, no randomness.
  *
- * Deployer address: 0x0e45dCb124102f8BE17f11234F69609C734D2Bee
- *
- * To deploy with Foundry:
- *   forge create src/RitualGenesis.sol:RitualGenesis \
- *     --rpc-url https://rpc.ritualfoundation.org \
- *     --private-key $PRIVATE_KEY \
- *     --broadcast
- *
- * Then update NEXT_PUBLIC_NFT_CONTRACT in .env.local with the deployed address.
+ * Changes vs original:
+ *   - Added `hasMinted` public mapping so the frontend can read mint status.
+ *   - Added `AlreadyMinted` custom error + enforced 1-per-wallet in mint().
+ *   - Deploy script no longer validates non-empty baseURI so you can deploy
+ *     before IPFS metadata is ready and set it later with setBaseURI().
  */
 contract RitualGenesis is ERC721, Ownable {
     // ============================================================
@@ -38,8 +34,12 @@ contract RitualGenesis is ERC721, Ownable {
     /// @notice Total number of NFTs minted so far
     uint256 private _totalSupply;
 
-    /// @notice Base URI for token metadata (IPFS or placeholder)
+    /// @notice Base URI for token metadata (IPFS or HTTP)
     string private _baseTokenURI;
+
+    /// @notice Tracks whether a wallet has already minted
+    /// @dev    Public so the frontend can read it directly without an event index.
+    mapping(address => bool) public hasMinted;
 
     // ============================================================
     // Events
@@ -53,6 +53,7 @@ contract RitualGenesis is ERC721, Ownable {
     // ============================================================
 
     error SoldOut();
+    error AlreadyMinted();
     error InsufficientPayment(uint256 sent, uint256 required);
     error InvalidBaseURI();
     error WithdrawFailed();
@@ -61,12 +62,19 @@ contract RitualGenesis is ERC721, Ownable {
     // Constructor
     // ============================================================
 
+    /**
+     * @param baseURI IPFS or HTTP base URI ending with "/".
+     *                Pass an empty string "" to deploy first and set later.
+     */
     constructor(string memory baseURI)
         ERC721("Ritual Genesis", "RGEN")
         Ownable(msg.sender)
     {
-        _validateBaseURI(baseURI);
-        _baseTokenURI = baseURI;
+        // Allow empty baseURI at deploy time; owner can set it later.
+        if (bytes(baseURI).length > 0) {
+            _validateBaseURI(baseURI);
+            _baseTokenURI = baseURI;
+        }
     }
 
     // ============================================================
@@ -75,14 +83,17 @@ contract RitualGenesis is ERC721, Ownable {
 
     /**
      * @notice Mint one NFT to the caller.
-     * @dev Sequential token IDs starting at 1. Reverts if sold out or underpaid.
+     * @dev    Sequential IDs starting at 1. Reverts if sold out,
+     *         underpaid, or the wallet already minted.
      */
     function mint() external payable {
         if (_totalSupply >= MAX_SUPPLY) revert SoldOut();
+        if (hasMinted[msg.sender])      revert AlreadyMinted();
         if (msg.value < MINT_PRICE) {
             revert InsufficientPayment(msg.value, MINT_PRICE);
         }
 
+        hasMinted[msg.sender] = true;
         _totalSupply++;
         uint256 tokenId = _totalSupply;
 
@@ -95,17 +106,12 @@ contract RitualGenesis is ERC721, Ownable {
     // View Functions
     // ============================================================
 
-    /**
-     * @notice Returns the total number of NFTs minted.
-     * @dev Compatible with ERC-721 totalSupply convention.
-     */
+    /// @notice Returns the total number of NFTs minted.
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
-    /**
-     * @notice Returns true if the collection is fully minted.
-     */
+    /// @notice Returns true if the collection is fully minted.
     function soldOut() external view returns (bool) {
         return _totalSupply >= MAX_SUPPLY;
     }
@@ -116,7 +122,7 @@ contract RitualGenesis is ERC721, Ownable {
 
     /**
      * @notice Update the base URI for token metadata. Owner only.
-     * @param newBaseURI New IPFS or HTTP base URI (e.g., "ipfs://QmXxx/")
+     * @param newBaseURI New IPFS or HTTP base URI ending with "/" (e.g. "ipfs://Qm.../")
      */
     function setBaseURI(string calldata newBaseURI) external onlyOwner {
         _validateBaseURI(newBaseURI);
@@ -129,10 +135,11 @@ contract RitualGenesis is ERC721, Ownable {
     }
 
     /**
-     * @notice Returns the URI for a given token ID, appending .json to support IPFS folder structures.
+     * @notice Returns the URI for a given token ID, appending .json
+     *         to support IPFS folder structures.
      */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        ownerOf(tokenId); // Reverts if token does not exist
+        ownerOf(tokenId); // Reverts with ERC721NonexistentToken if not minted
 
         string memory baseURI = _baseURI();
         return bytes(baseURI).length > 0
@@ -144,9 +151,7 @@ contract RitualGenesis is ERC721, Ownable {
     // Owner Withdrawal
     // ============================================================
 
-    /**
-     * @notice Withdraw all accumulated RITUAL from mint proceeds. Owner only.
-     */
+    /// @notice Withdraw all accumulated RITUAL from mint proceeds. Owner only.
     function withdraw() external onlyOwner {
         (bool success, ) = owner().call{value: address(this).balance}("");
         if (!success) revert WithdrawFailed();
@@ -154,6 +159,10 @@ contract RitualGenesis is ERC721, Ownable {
 
     /// @notice Accept RITUAL sent directly to the contract
     receive() external payable {}
+
+    // ============================================================
+    // Internal helpers
+    // ============================================================
 
     function _validateBaseURI(string memory baseURI) internal pure {
         bytes memory b = bytes(baseURI);

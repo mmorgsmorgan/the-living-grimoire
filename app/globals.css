@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * FIX: Tailwind v4 requires an explicit @config directive to load
+ * the JS config file (tailwind.config.ts). Without this, custom
+ * color tokens (ritual-green, ritual-gold, etc.) and custom
+ * shadows/animations are undefined and class names silently fail.
+ */
+@config "../tailwind.config.ts";
+
 /* =============================================
    Ritual Design System — CSS Custom Properties
    ============================================= */
@@ -230,4 +238,11 @@ body {
 :focus-visible {
   outline: 2px solid rgba(25, 209, 132, 0.5);
   outline-offset: 2px;
+}
+
+/* =============================================
+   Toast overrides — force dark styling
+   ============================================= */
+[data-hot-toast] {
+  border-radius: 10px !important;
 }
