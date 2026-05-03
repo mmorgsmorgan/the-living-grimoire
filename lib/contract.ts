@@ -17,10 +17,10 @@ export const MINT_PRICE_ETH = "0.01";
 
 /** Placeholder collection metadata */
 export const COLLECTION = {
-  name: "Ritual Genesis",
+  name: "The Mini Cauldron",
   description:
-    "99 unique genesis artifacts forged on Ritual Chain — the first L1 with enshrined AI precompiles. Each NFT is a key to an on-chain world of verifiable intelligence.",
-  symbol: "RGEN",
+    "99 unique genesis artifacts forged on Ritual Chain by Oluwasegun — the first L1 with enshrined AI precompiles. Each NFT is a key to an on-chain world of verifiable intelligence.",
+  symbol: "MCLD",
 };
 
 /**

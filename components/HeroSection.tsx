@@ -35,7 +35,7 @@ export function HeroSection() {
             className="block mt-2"
             style={{ color: "#19D184" }}
           >
-            Genesis Collection
+            by Oluwasegun
           </span>
         </h1>
 

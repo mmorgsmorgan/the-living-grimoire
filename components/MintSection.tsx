@@ -120,7 +120,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
   const xShareUrl = useMemo(() => {
     if (!walletMintedNft) return "#";
     return `https://x.com/intent/tweet?text=${encodeURIComponent(
-      `I just minted ${walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`} on Ritual Chain.`
+      `I just minted ${walletMintedNft.name ?? `Mini Cauldron #${walletMintedNft.tokenId}`} on Ritual Chain.`
     )}&url=${encodeURIComponent(`https://explorer.ritualfoundation.org/address/${NFT_CONTRACT_ADDRESS}`)}`;
   }, [walletMintedNft]);
 
@@ -137,7 +137,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
               <div>
                 <div className="flex items-center gap-2 mb-6">
                   <img src="/ritual-logo.jpg" alt="Ritual Logo" className="w-6 h-6 object-contain rounded-full" />
-                  <h2 className="font-display text-white text-2xl">Mint Your NFT</h2>
+                  <h2 className="font-display text-white text-2xl">Mint Your Cauldron NFT</h2>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-8">
@@ -367,7 +367,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Your Minted NFT</p>
                 <h3 className="text-white font-display text-xl">
-                  {walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`}
+                  {walletMintedNft.name ?? `Mini Cauldron #${walletMintedNft.tokenId}`}
                 </h3>
               </div>
               <button
@@ -385,7 +385,7 @@ export function MintSection({ mintProgress }: { mintProgress: MintProgressState 
               {walletMintedNft.image ? (
                 <img
                   src={walletMintedNft.image}
-                  alt={walletMintedNft.name ?? `Ritual Genesis #${walletMintedNft.tokenId}`}
+                  alt={walletMintedNft.name ?? `Mini Cauldron #${walletMintedNft.tokenId}`}
                   className="w-full rounded-xl border border-gray-800 object-cover"
                 />
               ) : (

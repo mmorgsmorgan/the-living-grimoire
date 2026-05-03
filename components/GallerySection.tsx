@@ -70,7 +70,7 @@ function NFTCard({ tokenId, isMinted }: { tokenId: number; isMinted: boolean }) 
         {image ? (
           <img
             src={image}
-            alt={`Ritual Genesis #${tokenId}`}
+            alt={`Mini Cauldron #${tokenId}`}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             onLoad={() => setImageLoading(false)}
           />
@@ -105,7 +105,7 @@ function NFTCard({ tokenId, isMinted }: { tokenId: number; isMinted: boolean }) 
       <div className="p-3 flex justify-between items-center">
         <div>
           <p className="font-body font-semibold text-gray-300 text-sm leading-tight">
-            Ritual Genesis #{tokenId}
+            Mini Cauldron #{tokenId}
           </p>
           <p className="font-mono text-[11px] text-gray-600 mt-0.5">ERC-721</p>
         </div>
@@ -157,7 +157,7 @@ export function GallerySection({ mintedCount }: { mintedCount: number }) {
             ⊘
           </div>
           <p className="text-gray-400 font-body text-base mb-1">No NFTs minted yet</p>
-          <p className="text-gray-600 font-mono text-sm">Be the first to forge a genesis artifact.</p>
+          <p className="text-gray-600 font-mono text-sm">Be the first to forge a Cauldron artifact.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">

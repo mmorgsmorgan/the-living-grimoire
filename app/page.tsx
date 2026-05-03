@@ -40,7 +40,10 @@ export default function Home() {
         {/* Footer */}
         <footer className="border-t border-gray-800/50 py-8 px-4">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-600">
-            <span className="font-mono">Ritual Genesis · Chain 1979</span>
+            <div className="flex flex-col gap-1">
+              <span className="font-mono">The Mini Cauldron · Chain 1979</span>
+              <span className="font-mono text-gray-500 text-[11px]">seen by mmorgs</span>
+            </div>
             <div className="flex items-center gap-4">
               <a
                 href="https://explorer.ritualfoundation.org"
@@ -67,7 +70,7 @@ export default function Home() {
                 Faucet ↗
               </a>
             </div>
-            <span className="font-mono">© {new Date().getFullYear()} Ritual Foundation</span>
+            <span className="font-mono">© {new Date().getFullYear()} by Oluwasegun</span>
           </div>
         </footer>
       </div>

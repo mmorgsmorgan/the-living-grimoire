@@ -71,7 +71,7 @@ export function Header() {
               />
             </div>
             <span className="font-display text-white text-lg tracking-tight">
-              Ritual Genesis
+              The Mini Cauldron
             </span>
             <span className="hidden sm:inline-block px-2 py-0.5 text-xs font-mono text-ritual-green/70 border border-ritual-green/20 rounded bg-ritual-green/5">
               Chain 1979

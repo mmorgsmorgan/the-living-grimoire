@@ -1,17 +1,20 @@
-# Ritual Genesis — NFT Minting dApp
+# The Mini Cauldron — NFT Mint by Oluwasegun
 
 > 99 unique genesis artifacts forged on **Ritual Chain** (Chain ID 1979) — the first L1 with enshrined AI precompiles.
+
+*seen by mmorgs*
 
 ## ✨ Features
 
 - **Wallet Connection** — MetaMask (injected) + WalletConnect support
 - **Mint Button** — calls `mint()` on the ERC-721 contract, handles approval, loading, and result
-- **Progress Bar** — live `minted / 99` with smooth fill animation, auto-refreshes every 30s
+- **Progress Bar** — live `minted / 99` with smooth fill animation, auto-refreshes on each block
 - **Gallery** — preview grid of minted NFTs with generative placeholder art
-- **Toast Notifications** — success / error toasts
-- **Chain Guard** — detects wrong network and prompts switch to Ritual Chain
+- **Toast Notifications** — success / error / loading toasts with Ritual dark theme
+- **Chain Guard** — detects wrong network and prompts switch to Ritual Chain (visible on all screen sizes)
 - **Dark-mode UI** — Ritual design system (Archivo Black + Barlow + JetBrains Mono)
-- **Error Handling** — user rejection, insufficient funds, sold-out, wrong network
+- **Error Handling** — user rejection, insufficient funds, already minted, sold-out, wrong network
+- **1-per-wallet** — on-chain `hasMinted` mapping enforces one mint per address
 
 ## 🏗 Project Structure
 
@@ -20,22 +23,23 @@ ritual-nft-mint/
 ├── app/
 │   ├── layout.tsx          # Root layout — fonts + metadata
 │   ├── page.tsx            # Home page composition
-│   ├── globals.css         # Ritual design tokens + animations
+│   ├── globals.css         # Ritual design tokens + animations + Tailwind v4 @config
 │   └── providers.tsx       # wagmi + react-query + toast providers
 ├── components/
-│   ├── Header.tsx          # Logo + wallet connect / disconnect
+│   ├── Header.tsx          # Logo + wallet connect / disconnect + chain guard banner
 │   ├── HeroSection.tsx     # Collection name + stats
-│   ├── MintSection.tsx     # Mint button + progress bar + contract info
-│   └── GallerySection.tsx  # NFT preview grid
+│   ├── MintSection.tsx     # Mint button + progress bar + contract info + post-mint modal
+│   └── GallerySection.tsx  # NFT preview grid with empty state
 ├── hooks/
-│   ├── useMint.ts          # Mint transaction lifecycle
-│   └── useMintProgress.ts  # totalSupply() polling (30s interval)
+│   ├── useMint.ts          # Mint transaction lifecycle + error parsing
+│   └── useMintProgress.ts  # totalSupply() polling (block-based + 30s fallback)
 ├── lib/
 │   ├── chain.ts            # Ritual Chain viem definition
 │   ├── wagmi.ts            # wagmi config (injected + WalletConnect)
-│   └── contract.ts         # ABI + address + collection constants
+│   ├── contract.ts         # ABI + address + collection constants
+│   └── nftMetadata.ts      # IPFS metadata + image resolution
 ├── contracts/
-│   ├── src/RitualGenesis.sol   # ERC-721 smart contract
+│   ├── src/RitualGenesis.sol   # ERC-721 smart contract (hasMinted + 1-per-wallet)
 │   ├── script/Deploy.s.sol     # Foundry deploy script
 │   └── foundry.toml            # Foundry config for Ritual Chain
 ├── .env.example            # Environment variable template
@@ -78,14 +82,16 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 📦 Smart Contract Deployment
+## 📦 Smart Contract
 
-### Prerequisites
-- [Foundry](https://book.getfoundry.sh/getting-started/installation) installed
-- Funded wallet on Ritual Chain ([faucet](https://faucet.ritualfoundation.org))
-- OpenZeppelin contracts installed
+### Key Features
+- **ERC-721** with sequential token IDs (1 → 99)
+- **1-per-wallet**: `hasMinted` mapping prevents double-minting
+- **Custom errors**: `SoldOut`, `AlreadyMinted`, `InsufficientPayment`
+- **Owner functions**: `setBaseURI()`, `withdraw()`
+- **Flexible deploy**: baseURI is optional at construction time
 
-### Deploy
+### Deploy (not deployed yet)
 
 ```bash
 cd contracts
@@ -97,14 +103,17 @@ forge install OpenZeppelin/openzeppelin-contracts
 echo "PRIVATE_KEY=0xYourPrivateKey" > .env
 source .env
 
-# Deploy to Ritual Chain
+# Deploy to Ritual Chain (with known IPFS CID)
+export BASE_URI="ipfs://YourCID/"
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url https://rpc.ritualfoundation.org \
-  --broadcast \
-  -vvvv
-```
+  --broadcast -vvvv
 
-Copy the deployed address and set `NEXT_PUBLIC_NFT_CONTRACT` in your frontend `.env.local`.
+# Or deploy without baseURI (set it later with setBaseURI)
+forge script script/Deploy.s.sol:Deploy \
+  --rpc-url https://rpc.ritualfoundation.org \
+  --broadcast -vvvv
+```
 
 ### Verify on Explorer
 
@@ -118,24 +127,6 @@ forge verify-contract \
   0xYourContractAddress \
   src/RitualGenesis.sol:RitualGenesis
 ```
-
----
-
-## 🔌 Plugging In Real Data
-
-### Real Contract
-1. Deploy `RitualGenesis.sol` to Ritual Chain
-2. Set `NEXT_PUBLIC_NFT_CONTRACT` in `.env.local`
-
-### Real NFT Images (IPFS)
-1. Upload 99 images + metadata JSON files to IPFS (Pinata, NFT.Storage)
-2. Call `setBaseURI("ipfs://YourCID/")` on the deployed contract
-3. The `tokenURI(tokenId)` function returns `baseURI + tokenId + ".json"`
-4. Replace placeholder art in `GallerySection.tsx` with real `<img>` tags
-
-### WalletConnect
-1. Get a project ID at [cloud.walletconnect.com](https://cloud.walletconnect.com)
-2. Set `NEXT_PUBLIC_WC_PROJECT_ID` in `.env.local`
 
 ---
 
@@ -158,8 +149,18 @@ forge verify-contract \
 
 Ritual Chain uses precompile-based execution. `useWriteContract` internally calls `eth_call` (simulation) before sending, which fails on precompile addresses. Using `useSendTransaction` with `encodeFunctionData` skips simulation entirely — this is the **Ritual-safe** pattern for all contract writes.
 
+### Tailwind v4 + `@config`
+
+This project uses Tailwind CSS v4 with the `@tailwindcss/postcss` plugin. The custom design tokens (colors, fonts, shadows, animations) are defined in `tailwind.config.ts` and loaded via `@config "../tailwind.config.ts"` in `globals.css`.
+
 ### Auto-refresh
-`useMintProgress` uses wagmi's `refetchInterval: 30_000` on `useReadContract`. Post-mint, we call `refresh()` after a 3-second delay to give the chain time to index the transaction.
+
+`useMintProgress` uses `useWatchBlockNumber` for near-real-time updates plus a 30-second `setInterval` fallback. Post-mint, the hook is called multiple times with staggered delays to account for RPC indexing lag.
 
 ### Error parsing
-`useMint` parses common wallet errors (user rejection, insufficient funds, sold-out, wrong chain) into human-readable messages. Raw hex errors are never shown to users.
+
+`useMint` parses common wallet errors (user rejection, insufficient funds, sold-out, already minted, wrong chain) into human-readable messages. Raw hex errors are never shown to users.
+
+---
+
+*The Mini Cauldron by Oluwasegun · seen by mmorgs*

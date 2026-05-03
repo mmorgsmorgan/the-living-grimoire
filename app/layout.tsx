@@ -3,13 +3,13 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Ritual Genesis — NFT Mint",
+  title: "The Mini Cauldron — NFT Mint by Oluwasegun",
   description:
-    "Mint your Ritual Genesis NFT. 99 unique artifacts forged on Ritual Chain — the first L1 with enshrined AI precompiles.",
-  keywords: ["NFT", "Ritual Chain", "mint", "blockchain", "web3"],
+    "Mint your Mini Cauldron NFT. 99 unique artifacts forged on Ritual Chain by Oluwasegun — the first L1 with enshrined AI precompiles.",
+  keywords: ["NFT", "Ritual Chain", "mint", "blockchain", "web3", "Cauldron", "Oluwasegun"],
   openGraph: {
-    title: "Ritual Genesis — NFT Mint",
-    description: "99 unique genesis artifacts forged on Ritual Chain.",
+    title: "The Mini Cauldron — NFT Mint by Oluwasegun",
+    description: "99 unique genesis artifacts forged on Ritual Chain by Oluwasegun.",
     type: "website",
   },
 };
