@@ -1,35 +1,35 @@
 @import "tailwindcss";
 
-/*
- * FIX: Tailwind v4 requires an explicit @config directive to load
- * the JS config file (tailwind.config.ts). Without this, custom
- * color tokens (ritual-green, ritual-gold, etc.) and custom
- * shadows/animations are undefined and class names silently fail.
- */
 @config "../tailwind.config.ts";
 
 /* =============================================
-   Ritual Design System — CSS Custom Properties
+   The Living Grimoire — Design System
    ============================================= */
 :root {
-  --font-display: "Archivo Black", system-ui, sans-serif;
-  --font-body: "Barlow", "Inter", system-ui, sans-serif;
+  --font-display: "Cinzel", "Archivo Black", serif;
+  --font-body: "Crimson Text", "Georgia", serif;
+  --font-sans: "Barlow", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
   /* Color tokens */
-  --color-green: #19d184;
-  --color-lime: #bfff00;
-  --color-pink: #ff1dce;
-  --color-gold: #facc15;
-  --color-red: #ef4444;
-  --color-elevated: #111827;
-  --color-surface: #1f2937;
+  --grimoire-bg: #0a0612;
+  --grimoire-elevated: #140e24;
+  --grimoire-surface: #1e1535;
+  --grimoire-border: #2a1f4e;
+  --grimoire-purple: #8b5cf6;
+  --grimoire-purple-light: #a78bfa;
+  --grimoire-purple-deep: #4c1d95;
+  --grimoire-gold: #c9a84c;
+  --grimoire-gold-light: #e2c97e;
+  --grimoire-ember: #ff6b35;
+  --grimoire-teal: #4ecdc4;
+  --grimoire-crimson: #dc2626;
+  --grimoire-ink: #d4c5a9;
+  --grimoire-muted: #6b6280;
 }
 
 /* Global base */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
@@ -38,211 +38,303 @@ html {
 }
 
 body {
-  background: #000000;
-  color: #d1d5db;
-  font-family: var(--font-body);
+  background: var(--grimoire-bg);
+  color: var(--grimoire-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Typography helpers */
-.font-display {
-  font-family: var(--font-display);
-}
-.font-body {
-  font-family: var(--font-body);
-}
-.font-mono {
-  font-family: var(--font-mono);
-}
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-sans { font-family: var(--font-sans); }
+.font-mono { font-family: var(--font-mono); }
 
 /* =============================================
-   Ritual Animations
+   Animations
    ============================================= */
 
-@keyframes pulse-green {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(25, 209, 132, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(25, 209, 132, 0);
-  }
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(201, 168, 76, 0); }
 }
 
-@keyframes glow-green {
-  0%,
-  100% {
-    text-shadow: 0 0 8px rgba(25, 209, 132, 0.5);
-  }
-  50% {
-    text-shadow: 0 0 20px rgba(25, 209, 132, 0.8);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+@keyframes rune-glow {
+  0%, 100% { text-shadow: 0 0 8px rgba(139, 92, 246, 0.4), 0 0 20px rgba(139, 92, 246, 0.1); }
+  50% { text-shadow: 0 0 16px rgba(139, 92, 246, 0.7), 0 0 40px rgba(139, 92, 246, 0.3); }
 }
 
 @keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes bar-fill {
-  from {
-    width: 0%;
-  }
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes scan-line {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(400%);
-  }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.animate-pulse-green {
-  animation: pulse-green 2s ease-in-out infinite;
+@keyframes ink-spread {
+  from { clip-path: circle(0% at 50% 50%); opacity: 0; }
+  to { clip-path: circle(100% at 50% 50%); opacity: 1; }
 }
-.animate-float {
-  animation: float 4s ease-in-out infinite;
+
+@keyframes page-turn {
+  0% { transform: perspective(800px) rotateY(0deg); }
+  50% { transform: perspective(800px) rotateY(-15deg); }
+  100% { transform: perspective(800px) rotateY(0deg); }
 }
-.animate-fade-in {
-  animation: fade-in 0.4s ease-out both;
+
+@keyframes typewriter-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
+
+@keyframes ember-float {
+  0% { transform: translateY(0) scale(1); opacity: 0.8; }
+  50% { transform: translateY(-20px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(0.8); opacity: 0; }
+}
+
+@keyframes scroll-reveal {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-pulse-gold { animation: pulse-gold 2.5s ease-in-out infinite; }
+.animate-rune-glow { animation: rune-glow 3s ease-in-out infinite; }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-fade-in { animation: fade-in 0.5s ease-out both; }
+.animate-fade-in-up { animation: fade-in-up 0.6s ease-out both; }
 .animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 25%,
-    rgba(25, 209, 132, 0.08) 50%,
-    transparent 75%
-  );
+  background: linear-gradient(90deg, transparent 25%, rgba(139, 92, 246, 0.06) 50%, transparent 75%);
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;
 }
+.animate-ink-spread { animation: ink-spread 0.8s ease-out both; }
+.animate-scroll-reveal { animation: scroll-reveal 0.6s ease-out both; }
 
 /* =============================================
-   Ritual Progress Bar
+   Grimoire Cards
    ============================================= */
-.ritual-progress-track {
-  background: #1f2937;
+.grimoire-card {
+  background: var(--grimoire-elevated);
+  border: 1px solid var(--grimoire-border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.grimoire-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 8px 40px -10px rgba(139, 92, 246, 0.2);
+}
+
+/* =============================================
+   Story Panels
+   ============================================= */
+.story-panel {
+  background: linear-gradient(135deg, var(--grimoire-elevated), rgba(30, 21, 53, 0.8));
+  border: 1px solid var(--grimoire-border);
+  border-radius: 12px;
+  position: relative;
+}
+
+.story-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--grimoire-gold), transparent);
+  opacity: 0.5;
+}
+
+/* =============================================
+   Rune Border
+   ============================================= */
+.rune-border {
+  position: relative;
+  border: 1px solid var(--grimoire-border);
+  border-radius: 12px;
+}
+
+.rune-border::before,
+.rune-border::after {
+  content: "◆";
+  position: absolute;
+  color: var(--grimoire-gold);
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.rune-border::before { top: -6px; left: 16px; }
+.rune-border::after { bottom: -6px; right: 16px; }
+
+/* =============================================
+   Grimoire Mesh Background
+   ============================================= */
+.grimoire-mesh {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(201, 168, 76, 0.05), transparent),
+    radial-gradient(ellipse 40% 30% at 10% 60%, rgba(255, 107, 53, 0.03), transparent),
+    var(--grimoire-bg);
+}
+
+/* =============================================
+   Progress Bar (Grimoire style)
+   ============================================= */
+.grimoire-progress-track {
+  background: var(--grimoire-surface);
   border-radius: 9999px;
   overflow: hidden;
   position: relative;
-  height: 12px;
+  height: 10px;
 }
 
-.ritual-progress-fill {
+.grimoire-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #19d184, #bfff00);
+  background: linear-gradient(90deg, var(--grimoire-purple), var(--grimoire-gold));
   border-radius: 9999px;
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
-.ritual-progress-fill::after {
+.grimoire-progress-fill::after {
   content: "";
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; right: 0; bottom: 0;
   width: 40px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   animation: shimmer 1.5s linear infinite;
 }
 
 /* =============================================
-   NFT Card
+   Buttons
    ============================================= */
-.nft-card {
-  background: #111827;
-  border: 1px solid #374151;
+.btn-primary {
+  background: linear-gradient(135deg, var(--grimoire-purple), var(--grimoire-purple-deep));
+  color: white;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 12px 28px;
   border-radius: 12px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease,
-    box-shadow 0.2s ease;
 }
 
-.nft-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(25, 209, 132, 0.4);
-  box-shadow: 0 0 30px -5px rgba(25, 209, 132, 0.2);
+.btn-primary:hover {
+  box-shadow: 0 0 30px -5px rgba(139, 92, 246, 0.4);
+  transform: translateY(-1px);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--grimoire-gold);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: var(--grimoire-gold);
+  box-shadow: 0 0 20px -5px rgba(201, 168, 76, 0.2);
 }
 
 /* =============================================
-   Mesh gradient background
+   Genre Badges
    ============================================= */
-.ritual-mesh {
-  background: radial-gradient(
-      ellipse 80% 50% at 50% -20%,
-      rgba(25, 209, 132, 0.08),
-      transparent
-    ),
-    radial-gradient(
-      ellipse 60% 40% at 80% 80%,
-      rgba(255, 29, 206, 0.05),
-      transparent
-    ),
-    #000000;
-}
+.genre-fantasy { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.25); }
+.genre-scifi { background: rgba(78, 205, 196, 0.15); color: #4ecdc4; border: 1px solid rgba(78, 205, 196, 0.25); }
+.genre-mythology { background: rgba(201, 168, 76, 0.15); color: #e2c97e; border: 1px solid rgba(201, 168, 76, 0.25); }
+.genre-cyberpunk { background: rgba(255, 107, 53, 0.15); color: #ff6b35; border: 1px solid rgba(255, 107, 53, 0.25); }
+.genre-horror { background: rgba(220, 38, 38, 0.15); color: #f87171; border: 1px solid rgba(220, 38, 38, 0.25); }
+.genre-adventure { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.25); }
 
 /* =============================================
    Scrollbar
    ============================================= */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #000;
-}
-::-webkit-scrollbar-thumb {
-  background: #374151;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #19d184;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--grimoire-bg); }
+::-webkit-scrollbar-thumb { background: var(--grimoire-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--grimoire-purple); }
 
 /* =============================================
-   Focus rings (Ritual standard)
+   Focus rings
    ============================================= */
 :focus-visible {
-  outline: 2px solid rgba(25, 209, 132, 0.5);
+  outline: 2px solid rgba(139, 92, 246, 0.5);
   outline-offset: 2px;
 }
 
 /* =============================================
-   Toast overrides — force dark styling
+   Tab styles
+   ============================================= */
+.tab-active {
+  color: var(--grimoire-gold);
+  border-bottom: 2px solid var(--grimoire-gold);
+}
+
+.tab-inactive {
+  color: var(--grimoire-muted);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab-inactive:hover {
+  color: var(--grimoire-ink);
+  border-bottom-color: rgba(201, 168, 76, 0.3);
+}
+
+/* =============================================
+   Toast overrides
    ============================================= */
 [data-hot-toast] {
-  border-radius: 10px !important;
+  border-radius: 12px !important;
+}
+
+/* =============================================
+   Utility: truncate multiline
+   ============================================= */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

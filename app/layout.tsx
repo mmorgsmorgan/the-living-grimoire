@@ -3,13 +3,25 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "The Mini Cauldron — NFT Mint by Oluwasegun",
+  title: "The Living Grimoire — AI-Powered NFT Storytelling Marketplace",
   description:
-    "Mint your Mini Cauldron NFT. 99 unique artifacts forged on Ritual Chain by Oluwasegun — the first L1 with enshrined AI precompiles.",
-  keywords: ["NFT", "Ritual Chain", "mint", "blockchain", "web3", "Cauldron", "Oluwasegun"],
+    "Transform NFT collections into living worlds. AI-generated lore, characters, locations, and stories — bringing every NFT to life on Ritual Chain.",
+  keywords: [
+    "NFT",
+    "AI",
+    "storytelling",
+    "marketplace",
+    "Ritual Chain",
+    "blockchain",
+    "web3",
+    "Living Grimoire",
+    "NFT lore",
+    "NFT stories",
+  ],
   openGraph: {
-    title: "The Mini Cauldron — NFT Mint by Oluwasegun",
-    description: "99 unique genesis artifacts forged on Ritual Chain by Oluwasegun.",
+    title: "The Living Grimoire — AI-Powered NFT Storytelling",
+    description:
+      "Every NFT has a story waiting to be told. Transform collections into living worlds with AI-generated narratives.",
     type: "website",
   },
 };
@@ -29,11 +41,11 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-black text-gray-300 font-body antialiased">
+      <body className="bg-grimoire-bg text-grimoire-ink font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
