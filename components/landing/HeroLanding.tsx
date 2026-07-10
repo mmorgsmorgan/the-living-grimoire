@@ -18,10 +18,10 @@ export function HeroLanding() {
           AI-Powered · Ritual Chain
         </div>
 
-        {/* Grimoire icon */}
+        {/* Grimoire logo */}
         <div className="flex justify-center mb-8 animate-fade-in" style={{ animationDelay: "0.05s" }}>
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-grimoire-purple/20 to-grimoire-gold/20 border border-grimoire-border flex items-center justify-center animate-float">
-            <span className="text-5xl" role="img" aria-label="book">📖</span>
+          <div className="w-32 h-32 rounded-2xl overflow-hidden border border-grimoire-border animate-float shadow-glow-purple">
+            <img src="/logo.png" alt="The Living Grimoire" className="w-full h-full object-cover" />
           </div>
         </div>
 
@@ -52,8 +52,10 @@ export function HeroLanding() {
             </svg>
           </Link>
           <Link href="/create" className="btn-secondary text-base px-8 py-3.5 inline-flex items-center gap-2">
-            Create a World
-            <span className="text-lg">✦</span>
+            Deploy a Collection
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M3 8h10M9 4l4 4-4 4" />
+            </svg>
           </Link>
         </div>
 

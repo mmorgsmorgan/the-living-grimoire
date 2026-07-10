@@ -1,5 +1,5 @@
 import { type PublicClient } from "viem";
-import { NFT_ABI, NFT_CONTRACT_ADDRESS } from "@/lib/contract";
+import { NFT_ABI, NFT_CONTRACT_ADDRESS } from "@/lib/contracts";
 
 export type NftTrait = {
   trait_type: string;

@@ -1,7 +1,10 @@
 # dependencies
-/node_modules
+node_modules/
+backend/node_modules/
 /.pnp
 .pnp.js
+*.png
+!public/logo.png
 
 # testing
 /coverage
@@ -23,7 +26,11 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+
+# grimoire world database (local dev)
+.grimoire-data/
 
 # vercel
 .vercel

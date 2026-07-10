@@ -36,6 +36,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/explore", label: "Explore" },
+    { href: "/market", label: "Market" },
     { href: "/create", label: "Create" },
   ];
 
@@ -63,9 +64,7 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-grimoire-purple to-grimoire-gold flex items-center justify-center text-white text-lg font-display shadow-glow-purple group-hover:shadow-glow-gold transition-shadow duration-500">
-              ✦
-            </div>
+            <img src="/logo.png" alt="The Living Grimoire" className="w-9 h-9 rounded-lg object-cover shadow-glow-purple group-hover:shadow-glow-gold transition-shadow duration-500" />
             <div className="flex flex-col">
               <span className="font-display text-grimoire-gold-light text-base tracking-wide leading-tight">
                 The Living Grimoire
@@ -145,12 +144,21 @@ export function Navbar() {
 
             {mounted && isConnected && address && (
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-grimoire-elevated border border-grimoire-border rounded-lg">
+                <Link
+                  href={`/profile/${address}`}
+                  className="hidden sm:inline-flex px-3 py-1.5 text-xs font-sans font-semibold text-grimoire-muted border border-grimoire-border rounded-lg hover:text-grimoire-gold hover:border-grimoire-gold/40 transition-colors"
+                >
+                  My NFTs
+                </Link>
+                <Link
+                  href={`/profile/${address}`}
+                  className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-grimoire-elevated border border-grimoire-border rounded-lg hover:border-grimoire-purple/40 transition-colors"
+                >
                   <span className="w-2 h-2 rounded-full bg-grimoire-purple animate-pulse" />
                   <span className="font-mono text-xs text-grimoire-ink">
                     {truncateAddress(address)}
                   </span>
-                </div>
+                </Link>
                 <button
                   id="disconnect-wallet-btn"
                   onClick={() => disconnect()}
@@ -192,6 +200,15 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              {isConnected && address && (
+                <Link
+                  href={`/profile/${address}`}
+                  onClick={() => setMobileOpen(false)}
+                  className="px-4 py-3 text-sm font-sans font-medium text-grimoire-muted hover:text-grimoire-gold hover:bg-grimoire-surface/50 rounded-lg transition-colors"
+                >
+                  My NFTs
+                </Link>
+              )}
             </nav>
           </div>
         )}

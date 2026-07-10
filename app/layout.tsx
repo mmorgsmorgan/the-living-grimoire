@@ -3,25 +3,24 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "The Living Grimoire — AI-Powered NFT Storytelling Marketplace",
+  title: "The Living Grimoire -- AI-Powered NFT Storytelling on Ritual Chain",
   description:
-    "Transform NFT collections into living worlds. AI-generated lore, characters, locations, and stories — bringing every NFT to life on Ritual Chain.",
+    "Deploy NFT collections and transform them into living worlds. AI-generated lore, characters, locations, and stories on Ritual Chain.",
   keywords: [
     "NFT",
     "AI",
     "storytelling",
-    "marketplace",
     "Ritual Chain",
     "blockchain",
     "web3",
     "Living Grimoire",
-    "NFT lore",
-    "NFT stories",
+    "deploy",
+    "ERC-721",
   ],
   openGraph: {
-    title: "The Living Grimoire — AI-Powered NFT Storytelling",
+    title: "The Living Grimoire -- AI-Powered NFT Storytelling",
     description:
-      "Every NFT has a story waiting to be told. Transform collections into living worlds with AI-generated narratives.",
+      "Deploy NFT collections and bring them to life with AI-generated narratives on Ritual Chain.",
     type: "website",
   },
 };
@@ -41,7 +40,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
       </head>

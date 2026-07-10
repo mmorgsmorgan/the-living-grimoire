@@ -18,9 +18,13 @@ export const wagmiConfig = createConfig({
       ? [walletConnect({ projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID })]
       : []),
   ],
+  // Pin all reads to the Ritual HTTP RPC. `batch: false` disables viem's
+  // multicall3 aggregation — Ritual has no multicall3 deployed, so batched
+  // reads would silently return nothing. Individual eth_calls work fine.
   transports: {
     [ritualChain.id]: http(
-      process.env.NEXT_PUBLIC_RPC_URL ?? "https://rpc.ritualfoundation.org"
+      process.env.NEXT_PUBLIC_RPC_URL ?? "https://rpc.ritualfoundation.org",
+      { batch: false }
     ),
   },
 });

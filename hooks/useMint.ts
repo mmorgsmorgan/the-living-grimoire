@@ -4,7 +4,7 @@ import { useAccount, usePublicClient, useSendTransaction } from "wagmi";
 import { decodeEventLog, encodeFunctionData, parseEther } from "viem";
 import { useState, useCallback } from "react";
 import { toast } from "react-hot-toast";
-import { NFT_ABI, NFT_CONTRACT_ADDRESS, MINT_PRICE_ETH, MAX_SUPPLY } from "@/lib/contract";
+import { NFT_ABI, NFT_CONTRACT_ADDRESS, MINT_PRICE_ETH, MAX_SUPPLY } from "@/lib/contracts";
 import { type MintedNft, resolveMintedNft } from "@/lib/nftMetadata";
 
 /**

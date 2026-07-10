@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ritualChain } from "@/lib/chain";
 import { useMint } from "@/hooks/useMint";
 import { type MintProgressState } from "@/hooks/useMintProgress";
-import { MAX_SUPPLY, MINT_PRICE_ETH, NFT_ABI, NFT_CONTRACT_ADDRESS } from "@/lib/contract";
+import { MAX_SUPPLY, MINT_PRICE_ETH, NFT_ABI, NFT_CONTRACT_ADDRESS } from "@/lib/contracts";
 import { type MintedNft, resolveMintedNft } from "@/lib/nftMetadata";
 
 /** MintSection — progress bar, mint button, stats panel, post-mint modal */

@@ -4,28 +4,40 @@
 
 /* =============================================
    The Living Grimoire — Design System
+   Fonts: Fraunces (display), Inter (body), JetBrains Mono (mono)
+   Palette: dark parchment + purple/gold + glass-card
    ============================================= */
 :root {
-  --font-display: "Cinzel", "Archivo Black", serif;
-  --font-body: "Crimson Text", "Georgia", serif;
-  --font-sans: "Barlow", "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  /* Typography (from dot-portfolio) */
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Color tokens */
-  --grimoire-bg: #0a0612;
-  --grimoire-elevated: #140e24;
-  --grimoire-surface: #1e1535;
-  --grimoire-border: #2a1f4e;
-  --grimoire-purple: #8b5cf6;
+  /* Color tokens — dark parchment base */
+  --grimoire-bg: #0d0a07;
+  --grimoire-elevated: #1a1610;
+  --grimoire-surface: #231f18;
+  --grimoire-border: #3a3228;
+  --grimoire-purple: #7c3aed;
   --grimoire-purple-light: #a78bfa;
   --grimoire-purple-deep: #4c1d95;
-  --grimoire-gold: #c9a84c;
+  --grimoire-gold: #d4a853;
   --grimoire-gold-light: #e2c97e;
   --grimoire-ember: #ff6b35;
   --grimoire-teal: #4ecdc4;
   --grimoire-crimson: #dc2626;
   --grimoire-ink: #d4c5a9;
-  --grimoire-muted: #6b6280;
+  --grimoire-muted: #7a6f5e;
+  --grimoire-parchment: #efece5;
+  --grimoire-parchment-dark: #1a1610;
+
+  /* Motion (from dot-portfolio) */
+  --dur-fast: .2s;
+  --dur-med: .5s;
+  --dur-slow: 1s;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
 }
 
 /* Global base */
@@ -34,7 +46,8 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* Lenis will handle smooth scroll via JS */
+  scroll-behavior: auto;
 }
 
 body {
@@ -146,7 +159,9 @@ body {
    Story Panels
    ============================================= */
 .story-panel {
-  background: linear-gradient(135deg, var(--grimoire-elevated), rgba(30, 21, 53, 0.8));
+  background: linear-gradient(135deg, rgba(26, 22, 16, 0.85), rgba(35, 31, 24, 0.65));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--grimoire-border);
   border-radius: 12px;
   position: relative;
@@ -160,7 +175,17 @@ body {
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--grimoire-gold), transparent);
-  opacity: 0.5;
+  opacity: 0.4;
+}
+
+/* Glass-card variant — stronger blur + parchment tint */
+.glass-card {
+  background: linear-gradient(135deg, rgba(26, 22, 16, 0.7), rgba(35, 31, 24, 0.5));
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(212, 168, 83, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(239, 236, 229, 0.03);
 }
 
 /* =============================================
@@ -189,9 +214,9 @@ body {
    ============================================= */
 .grimoire-mesh {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(139, 92, 246, 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(201, 168, 76, 0.05), transparent),
-    radial-gradient(ellipse 40% 30% at 10% 60%, rgba(255, 107, 53, 0.03), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.06), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(212, 168, 83, 0.04), transparent),
+    radial-gradient(ellipse 40% 30% at 10% 60%, rgba(26, 22, 16, 0.5), transparent),
     var(--grimoire-bg);
 }
 

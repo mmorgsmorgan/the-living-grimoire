@@ -4,25 +4,29 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
-import { useGrimoireStore } from "@/lib/store";
+import { fetchLore, type WorldDetail } from "@/lib/api";
 
 export default function StoryReaderPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { collections, hydrate, isHydrated } = useGrimoireStore();
+  const [worldData, setWorldData] = useState<WorldDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentChapter, setCurrentChapter] = useState(0);
   const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
-    if (!isHydrated) hydrate();
-  }, [hydrate, isHydrated]);
+    if (!id) return;
+    fetchLore(id)
+      .then((data) => setWorldData(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
 
-  const collection = collections.find((c) => c.id === id);
-  const world = collection?.world;
+  const world = worldData?.lore;
   const chapters = world?.chapters ?? [];
   const chapter = chapters[currentChapter];
 
-  if (!isHydrated) {
+  if (loading) {
     return (
       <main className="min-h-screen grimoire-mesh">
         <Navbar />
@@ -33,12 +37,14 @@ export default function StoryReaderPage() {
     );
   }
 
-  if (!collection || !world || chapters.length === 0) {
+  if (!worldData || !world || chapters.length === 0) {
     return (
       <main className="min-h-screen flex flex-col grimoire-mesh">
         <Navbar />
         <div className="pt-32 flex-1 flex flex-col items-center justify-center text-center px-4">
-          <div className="text-5xl mb-4">📖</div>
+          <div className="w-16 h-16 mb-4 rounded-2xl overflow-hidden border border-grimoire-border shadow-glow-purple flex items-center justify-center bg-grimoire-surface">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+          </div>
           <h1 className="font-display text-white text-2xl mb-2">No Story Available</h1>
           <p className="text-grimoire-muted text-sm mb-6 font-sans">This collection doesn&apos;t have any story chapters yet.</p>
           <Link href="/explore" className="btn-primary">Browse Worlds</Link>
@@ -47,10 +53,10 @@ export default function StoryReaderPage() {
     );
   }
 
-  const featuredChars = world.characters.filter((c) =>
+  const featuredChars = world.characters.filter((c: any) =>
     chapter?.characterIds.includes(c.id)
   );
-  const location = world.locations.find((l) => l.id === chapter?.locationId);
+  const location = world.locations.find((l: any) => l.id === chapter?.locationId);
   const progress = ((currentChapter + 1) / chapters.length) * 100;
 
   return (
@@ -62,7 +68,7 @@ export default function StoryReaderPage() {
             href={`/collection/${id}`}
             className="text-sm text-grimoire-muted hover:text-grimoire-gold transition-colors font-sans flex items-center gap-2"
           >
-            ← Back to {collection.name}
+            &larr; Back to {worldData.name}
           </Link>
 
           <div className="flex items-center gap-4">
@@ -101,7 +107,7 @@ export default function StoryReaderPage() {
           <div className="w-72 bg-grimoire-elevated border-l border-grimoire-border p-5 overflow-y-auto">
             <h3 className="font-display text-grimoire-gold text-sm mb-4">Chapters</h3>
             <div className="space-y-1">
-              {chapters.map((ch, i) => (
+              {chapters.map((ch: any, i: number) => (
                 <button
                   key={ch.id}
                   onClick={() => { setCurrentChapter(i); setShowSidebar(false); }}
@@ -142,7 +148,7 @@ export default function StoryReaderPage() {
 
           {/* Chapter content */}
           <div className="prose-grimoire">
-            {chapter?.content.split("\n\n").map((paragraph, i) => (
+            {chapter?.content.split("\n\n").map((paragraph: any, i: number) => (
               <p
                 key={i}
                 className="text-grimoire-ink font-body text-lg leading-[2] mb-6 animate-fade-in"
@@ -160,7 +166,7 @@ export default function StoryReaderPage() {
                 Characters in this chapter
               </p>
               <div className="flex flex-wrap gap-3">
-                {featuredChars.map((char) => (
+                {featuredChars.map((char: any) => (
                   <div key={char.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-grimoire-surface/50 border border-grimoire-border">
                     <div
                       className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-display text-white/80"

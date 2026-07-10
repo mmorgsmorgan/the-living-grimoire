@@ -28,9 +28,8 @@ export const ritualChain = defineChain({
       url: "https://explorer.ritualfoundation.org",
     },
   },
-  contracts: {
-    multicall3: {
-      address: "0x5577Ea679673Ec7508E9524100a188E7600202a3",
-    },
-  },
+  // NOTE: Ritual Chain has NO multicall3 contract deployed. Declaring one
+  // makes wagmi/viem batch every read through it, and since the address is
+  // empty the calls silently return nothing (blank "Loading…", 0/0, no phase).
+  // Leaving `contracts` empty forces individual eth_call reads, which work.
 });

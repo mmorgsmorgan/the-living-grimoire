@@ -4,20 +4,17 @@ export function HowItWorks() {
   const steps = [
     {
       number: "01",
-      icon: "🔗",
-      title: "Choose Your Collection",
-      description: "Import an existing NFT collection by contract address, or define a brand new collection you want to launch.",
+      title: "Deploy Your Collection",
+      description: "Upload images, set mint phases, configure royalties, and deploy your ERC-721A collection directly to Ritual Chain.",
     },
     {
       number: "02",
-      icon: "✨",
       title: "AI Generates the World",
       description: "Our AI engine reads the NFT metadata and generates rich lore, compelling characters, mystical locations, and an unfolding narrative.",
     },
     {
       number: "03",
-      icon: "📖",
-      title: "Explore & Share",
+      title: "Explore and Share",
       description: "Dive into your collection's living world. Read the story, meet the characters, explore the locations, and share the experience.",
     },
   ];
@@ -42,12 +39,9 @@ export function HowItWorks() {
             style={{ animationDelay: `${i * 0.15}s` }}
           >
             {/* Step number */}
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-grimoire-purple/10 border border-grimoire-purple/20 text-grimoire-purple-light font-mono text-sm mb-5 group-hover:bg-grimoire-purple/20 group-hover:border-grimoire-purple/40 transition-colors">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-grimoire-purple/10 border border-grimoire-purple/20 text-grimoire-purple-light font-mono text-base mb-6 group-hover:bg-grimoire-purple/20 group-hover:border-grimoire-purple/40 transition-colors">
               {step.number}
             </div>
-
-            {/* Icon */}
-            <div className="text-4xl mb-4">{step.icon}</div>
 
             {/* Title */}
             <h3 className="font-display text-white text-lg mb-3">{step.title}</h3>

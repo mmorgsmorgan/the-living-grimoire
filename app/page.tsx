@@ -64,8 +64,8 @@ export default function Home() {
         {recentCollections.length === 0 && (
           <section className="max-w-3xl mx-auto px-4 sm:px-6 pb-24 text-center">
             <div className="story-panel p-12">
-              <div className="w-16 h-16 rounded-full bg-grimoire-gold/10 border border-grimoire-gold/20 flex items-center justify-center mx-auto mb-5 text-3xl">
-                ✦
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl overflow-hidden border border-grimoire-border shadow-glow-purple flex items-center justify-center bg-grimoire-surface">
+                <img src="/logo.png" alt="The Living Grimoire Logo" className="w-full h-full object-cover" />
               </div>
               <h2 className="font-display text-white text-xl mb-3">No Living Worlds Yet</h2>
               <p className="text-grimoire-muted text-sm mb-6 font-sans max-w-md mx-auto">

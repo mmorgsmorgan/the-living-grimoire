@@ -6,24 +6,28 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { GenreBadge } from "@/components/shared/GenreBadge";
-import { useGrimoireStore } from "@/lib/store";
-import type { Collection, Character, Location, StoryChapter } from "@/lib/types";
+import { NFTGallery } from "@/components/nft/NFTGallery";
+import { fetchLore, type WorldDetail } from "@/lib/api";
+import type { Character, Location, StoryChapter } from "@/lib/types";
 
-type Tab = "overview" | "lore" | "characters" | "locations" | "stories";
+type Tab = "overview" | "gallery" | "lore" | "characters" | "locations" | "stories";
 
 export default function CollectionDetailPage() {
   const params = useParams();
   const id = params?.id as string;
-  const { collections, hydrate, isHydrated } = useGrimoireStore();
+  const [worldData, setWorldData] = useState<WorldDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   useEffect(() => {
-    if (!isHydrated) hydrate();
-  }, [hydrate, isHydrated]);
+    if (!id) return;
+    fetchLore(id)
+      .then((data) => setWorldData(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
 
-  const collection = collections.find((c) => c.id === id);
-
-  if (!isHydrated) {
+  if (loading) {
     return (
       <main className="min-h-screen grimoire-mesh">
         <Navbar />
@@ -34,24 +38,64 @@ export default function CollectionDetailPage() {
     );
   }
 
-  if (!collection) {
+  // No lore yet — still show the collection: its NFT gallery + a prompt to
+  // generate the Living World. Only valid contract addresses reach here.
+  if (!worldData) {
+    const isAddress = /^0x[0-9a-fA-F]{40}$/.test(id || "");
+    if (!isAddress) {
+      return (
+        <main className="min-h-screen flex flex-col grimoire-mesh">
+          <Navbar />
+          <div className="pt-32 flex-1 flex flex-col items-center justify-center text-center px-4">
+            <div className="w-16 h-16 mb-4 rounded-2xl overflow-hidden border border-grimoire-border shadow-glow-purple flex items-center justify-center bg-grimoire-surface">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <h1 className="font-display text-white text-2xl mb-2">Collection Not Found</h1>
+            <p className="text-grimoire-muted text-sm mb-6 font-sans">This collection doesn&apos;t exist.</p>
+            <Link href="/explore" className="btn-primary">Browse Worlds</Link>
+          </div>
+          <Footer />
+        </main>
+      );
+    }
     return (
       <main className="min-h-screen flex flex-col grimoire-mesh">
         <Navbar />
-        <div className="pt-32 flex-1 flex flex-col items-center justify-center text-center px-4">
-          <div className="text-5xl mb-4">📖</div>
-          <h1 className="font-display text-white text-2xl mb-2">World Not Found</h1>
-          <p className="text-grimoire-muted text-sm mb-6 font-sans">This collection doesn&apos;t exist or has been removed.</p>
-          <Link href="/explore" className="btn-primary">Browse Worlds</Link>
+        <div className="pt-16 flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div>
+                <p className="text-xs text-grimoire-muted font-mono">{id}</p>
+                <h1 className="font-display text-white text-3xl mt-1">Collection</h1>
+                <p className="text-grimoire-muted text-sm mt-1 font-sans">No Living World generated yet.</p>
+              </div>
+              <div className="flex gap-2">
+                <Link href={`/mint/${id}`} className="btn-secondary text-xs px-4 py-2">Mint</Link>
+                <Link href="/create" className="btn-primary text-xs px-4 py-2">Generate World</Link>
+              </div>
+            </div>
+            <NFTGallery contractAddress={id as `0x${string}`} />
+          </div>
         </div>
         <Footer />
       </main>
     );
   }
 
-  const { world } = collection;
+  // Adapt backend data to template expectations
+  const world = worldData.lore;
+  const collection = {
+    name: worldData.name,
+    description: world?.lore?.origin?.slice(0, 200) || "",
+    genre: worldData.genre || "fantasy",
+    tone: worldData.tone || "epic",
+    contractAddress: worldData.contract,
+    coverHue: Math.abs(worldData.contract.charCodeAt(4) * 7) % 360,
+    world,
+  };
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: "overview", label: "Overview" },
+    { key: "gallery", label: "Gallery" },
     { key: "lore", label: "Lore" },
     { key: "characters", label: "Characters", count: world?.characters.length },
     { key: "locations", label: "Locations", count: world?.locations.length },
@@ -70,7 +114,7 @@ export default function CollectionDetailPage() {
         >
           <div className="absolute inset-0 bg-gradient-to-t from-grimoire-bg to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 max-w-7xl mx-auto px-4 sm:px-6 pb-6">
-            <GenreBadge genre={collection.genre} size="md" />
+            <GenreBadge genre={collection.genre as any} size="md" />
             <h1 className="font-display text-white text-3xl sm:text-4xl mt-2">{collection.name}</h1>
             <p className="text-grimoire-muted text-sm font-sans mt-1 max-w-2xl">{collection.description}</p>
           </div>
@@ -98,20 +142,28 @@ export default function CollectionDetailPage() {
 
         {/* Tab content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          {!world ? (
-            <div className="py-20 text-center">
-              <div className="text-4xl mb-4">⏳</div>
-              <p className="text-grimoire-ink font-sans">This world hasn&apos;t been generated yet.</p>
-              <p className="text-grimoire-muted text-sm font-sans mt-1">The AI story engine needs to create content for this collection.</p>
-            </div>
-          ) : (
-            <>
-              {activeTab === "overview" && <OverviewTab collection={collection} />}
-              {activeTab === "lore" && <LoreTab collection={collection} />}
-              {activeTab === "characters" && <CharactersTab characters={world.characters} />}
-              {activeTab === "locations" && <LocationsTab locations={world.locations} characters={world.characters} />}
-              {activeTab === "stories" && <StoriesTab collection={collection} chapters={world.chapters} />}
-            </>
+          {/* Gallery always available — it reads NFTs straight from chain */}
+          {activeTab === "gallery" && (
+            <NFTGallery contractAddress={worldData.contract as `0x${string}`} />
+          )}
+
+          {/* Lore-driven tabs require a generated world */}
+          {activeTab !== "gallery" && (
+            !world ? (
+              <div className="py-20 text-center">
+                <div className="text-4xl mb-4">⏳</div>
+                <p className="text-grimoire-ink font-sans">This world hasn&apos;t been generated yet.</p>
+                <p className="text-grimoire-muted text-sm font-sans mt-1">The AI story engine needs to create content for this collection.</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === "overview" && <OverviewTab collection={collection} />}
+                {activeTab === "lore" && <LoreTab collection={collection} />}
+                {activeTab === "characters" && <CharactersTab characters={world.characters} />}
+                {activeTab === "locations" && <LocationsTab locations={world.locations} characters={world.characters} />}
+                {activeTab === "stories" && <StoriesTab collection={collection} chapters={world.chapters} />}
+              </>
+            )
           )}
         </div>
       </div>
@@ -122,7 +174,7 @@ export default function CollectionDetailPage() {
 }
 
 /* ── Overview Tab ──────────────────────────────────────────── */
-function OverviewTab({ collection }: { collection: Collection }) {
+function OverviewTab({ collection }: { collection: any }) {
   const { world } = collection;
   if (!world) return null;
 
@@ -156,7 +208,7 @@ function OverviewTab({ collection }: { collection: Collection }) {
       <div>
         <h3 className="font-display text-white text-lg mb-4">Key Characters</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {world.characters.slice(0, 3).map((char) => (
+          {world.characters.slice(0, 3).map((char: any) => (
             <CharacterMiniCard key={char.id} character={char} />
           ))}
         </div>
@@ -166,7 +218,7 @@ function OverviewTab({ collection }: { collection: Collection }) {
 }
 
 /* ── Lore Tab ──────────────────────────────────────────────── */
-function LoreTab({ collection }: { collection: Collection }) {
+function LoreTab({ collection }: { collection: any }) {
   const { world } = collection;
   if (!world) return null;
 
@@ -180,7 +232,7 @@ function LoreTab({ collection }: { collection: Collection }) {
       <div>
         <h3 className="font-display text-grimoire-gold text-xl mb-6">Factions</h3>
         <div className="space-y-4">
-          {world.lore.factions.map((faction, i) => (
+          {world.lore.factions.map((faction: any, i: number) => (
             <div key={i} className="story-panel p-5">
               <h4 className="font-display text-white text-base mb-2">{faction.name}</h4>
               <p className="text-grimoire-ink font-body text-sm leading-relaxed mb-2">{faction.description}</p>
@@ -219,7 +271,7 @@ function LoreSection({ title, content }: { title: string; content: string }) {
 function CharactersTab({ characters }: { characters: Character[] }) {
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in">
-      {characters.map((char) => (
+      {characters.map((char: any) => (
         <div key={char.id} className="grimoire-card p-5">
           {/* Avatar */}
           <div
@@ -236,7 +288,7 @@ function CharactersTab({ characters }: { characters: Character[] }) {
 
           {/* Traits */}
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {char.traits.map((trait) => (
+            {char.traits.map((trait: any) => (
               <span key={trait} className="px-2 py-0.5 rounded-full bg-grimoire-surface text-grimoire-muted text-[10px] font-sans">
                 {trait}
               </span>
@@ -262,7 +314,7 @@ function CharactersTab({ characters }: { characters: Character[] }) {
 function LocationsTab({ locations, characters }: { locations: Location[]; characters: Character[] }) {
   return (
     <div className="grid sm:grid-cols-2 gap-5 animate-fade-in">
-      {locations.map((loc) => {
+      {locations.map((loc: any) => {
         const connectedChars = characters.filter((c) => loc.connectedCharacterIds.includes(c.id));
         return (
           <div key={loc.id} className="grimoire-card overflow-hidden">
@@ -296,7 +348,7 @@ function LocationsTab({ locations, characters }: { locations: Location[]; charac
               {connectedChars.length > 0 && (
                 <div className="flex items-center gap-1 pt-2 border-t border-grimoire-border/50">
                   <span className="text-[10px] text-grimoire-muted font-sans">Connected:</span>
-                  {connectedChars.slice(0, 3).map((c) => (
+                  {connectedChars.slice(0, 3).map((c: any) => (
                     <span key={c.id} className="text-[10px] font-mono text-grimoire-ink">{c.name}</span>
                   ))}
                 </div>
@@ -310,7 +362,7 @@ function LocationsTab({ locations, characters }: { locations: Location[]; charac
 }
 
 /* ── Stories Tab ────────────────────────────────────────────── */
-function StoriesTab({ collection, chapters }: { collection: Collection; chapters: StoryChapter[] }) {
+function StoriesTab({ collection, chapters }: { collection: any; chapters: StoryChapter[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
@@ -327,7 +379,7 @@ function StoriesTab({ collection, chapters }: { collection: Collection; chapters
         </Link>
       </div>
 
-      {chapters.map((chapter) => (
+      {chapters.map((chapter: any) => (
         <div key={chapter.id} className="story-panel overflow-hidden">
           <button
             onClick={() => setExpandedId(expandedId === chapter.id ? null : chapter.id)}

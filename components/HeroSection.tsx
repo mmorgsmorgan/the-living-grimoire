@@ -1,6 +1,6 @@
 "use client";
 
-import { COLLECTION, MAX_SUPPLY } from "@/lib/contract";
+import { COLLECTION, MAX_SUPPLY } from "@/lib/contracts";
 
 /** Hero section — collection name, description, animated badge */
 export function HeroSection() {

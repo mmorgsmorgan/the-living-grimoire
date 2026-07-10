@@ -5,7 +5,10 @@ export function Footer() {
     <footer className="border-t border-grimoire-border/50 py-10 px-4 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-grimoire-muted">
         <div className="flex flex-col items-center sm:items-start gap-1">
-          <span className="font-display text-grimoire-gold text-sm">The Living Grimoire</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="The Living Grimoire" className="w-7 h-7 rounded-md object-cover" />
+            <span className="font-display text-grimoire-gold text-sm">The Living Grimoire</span>
+          </div>
           <span className="font-mono text-grimoire-muted/60">AI-Powered NFT Storytelling · Ritual Chain</span>
         </div>
         <div className="flex items-center gap-6">

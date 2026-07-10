@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePublicClient, useWatchBlockNumber } from "wagmi";
-import { NFT_ABI, NFT_CONTRACT_ADDRESS, MAX_SUPPLY } from "@/lib/contract";
+import { NFT_ABI, NFT_CONTRACT_ADDRESS, MAX_SUPPLY } from "@/lib/contracts";
 
 /**
  * useMintProgress — resilient totalSupply reader.
