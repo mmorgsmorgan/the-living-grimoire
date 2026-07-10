@@ -1,0 +1,85 @@
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
+import dotenv from "dotenv";
+
+import nftRoutes from "./routes/nfts";
+import collectionRoutes from "./routes/collections";
+import listingRoutes from "./routes/listings";
+import merkleRoutes from "./routes/merkle";
+import loreRoutes from "./routes/lore";
+import { startIndexer } from "./indexer/index";
+import { ensureSchema } from "./db/ensureSchema";
+
+dotenv.config();
+
+const PORT = parseInt(process.env.PORT || process.env.API_PORT || "3001");
+const HOST = process.env.API_HOST || "0.0.0.0";
+const API_KEY = process.env.API_KEY || ""; // Optional: set to enforce auth on write endpoints
+
+async function main() {
+  const app = Fastify({
+    logger: {
+      level: "info",
+    },
+    // Limit request body size to 1MB to prevent OOM attacks
+    bodyLimit: 1048576,
+  });
+
+  // ── Security: API key auth for write endpoints ──
+  app.decorate("verifyApiKey", async (request: any, reply: any) => {
+    if (!API_KEY) return; // No key configured = open access (dev mode)
+    const provided = request.headers["x-api-key"];
+    if (provided !== API_KEY) {
+      return reply.status(401).send({ error: "Unauthorized: invalid or missing API key" });
+    }
+  });
+
+  // Plugins
+  await app.register(cors, { origin: true });
+
+  // ── Security: Global rate limit (100 req/min for reads) ──
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+  });
+
+  // Health check
+  app.get("/health", async () => ({
+    status: "ok",
+    chain: "ritual",
+    chainId: 1979,
+    timestamp: new Date().toISOString(),
+  }));
+
+  // API routes
+  await app.register(nftRoutes);
+  await app.register(collectionRoutes);
+  await app.register(listingRoutes);
+  await app.register(merkleRoutes);
+  await app.register(loreRoutes);
+
+  // Start server
+  await app.listen({ port: PORT, host: HOST });
+  console.log(`\n🚀 RitualPad API running on http://${HOST}:${PORT}`);
+
+  // Auto-initialize database tables
+  try {
+    await ensureSchema();
+    console.log("✅ Database schema ready");
+  } catch (err) {
+    console.error("⚠️  Database schema init failed (API still running):", err);
+  }
+
+  // Start indexer in background
+  try {
+    await startIndexer();
+  } catch (err) {
+    console.error("⚠️  Indexer failed to start (API still running):", err);
+  }
+}
+
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
