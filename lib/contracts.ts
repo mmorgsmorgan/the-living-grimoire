@@ -340,7 +340,7 @@ export const MAX_SUPPLY = 99;
 export const COLLECTION = {
   name: "The Mini Cauldron",
   description:
-    "99 unique genesis artifacts forged on Ritual Chain by Oluwasegun.",
+    "99 unique genesis artifacts forged on Ritual Chain by Zuma.",
   symbol: "MCLD",
 };
 

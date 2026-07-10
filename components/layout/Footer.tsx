@@ -21,7 +21,7 @@ export function Footer() {
             Faucet ↗
           </a>
         </div>
-        <span className="font-mono">© {new Date().getFullYear()} by Oluwasegun</span>
+        <span className="font-mono">© {new Date().getFullYear()} by Zuma <span className="text-[7px] opacity-40 align-super tracking-tight">bdh</span></span>
       </div>
     </footer>
   );
