@@ -4,66 +4,34 @@
 // Upload files and metadata to IPFS via Pinata.
 // Ported from The-Cauldron frontend/lib/pinata.ts
 
-const PINATA_KEYS = [
-  process.env.NEXT_PUBLIC_PINATA_JWT_1,
-  process.env.NEXT_PUBLIC_PINATA_JWT_2,
-  process.env.NEXT_PUBLIC_PINATA_JWT_3,
-].filter(Boolean) as string[];
+// Uploads go through our own same-origin API route (`/api/pinata`), which holds
+// the Pinata JWT server-side and forwards to Pinata's v3 API. This avoids the
+// browser→Pinata CORS problem (Pinata's error responses omit CORS headers, so a
+// 401/413 surfaces as an opaque "Failed to fetch") and keeps the JWT off the client.
+const PINATA_UPLOAD_PROXY = "/api/pinata";
 
-let currentKeyIndex = 0;
-
-function getNextKey(): string {
-  if (!PINATA_KEYS.length) throw new Error("No Pinata keys configured");
-  const key = PINATA_KEYS[currentKeyIndex];
-  currentKeyIndex = (currentKeyIndex + 1) % PINATA_KEYS.length;
-  return key;
-}
-
-// Pinata's new v3 upload API. Legacy `api.pinata.cloud/pinning/*` endpoints
-// reject modern scoped keys with NO_SCOPES_FOUND, so we use v3 everywhere.
-const PINATA_V3_UPLOAD = "https://uploads.pinata.cloud/v3/files";
-
-/** POST a FormData (already containing file[s] + network) to v3, return the CID. */
+/** POST a FormData (already containing file[s] + network) via the proxy, return the CID. */
 async function v3Upload(buildForm: () => FormData): Promise<string> {
-  let lastError: Error | null = null;
+  const res = await fetch(PINATA_UPLOAD_PROXY, {
+    method: "POST",
+    body: buildForm(),
+  });
 
-  for (let i = 0; i < PINATA_KEYS.length; i++) {
-    const jwt = getNextKey();
-    try {
-      const res = await fetch(PINATA_V3_UPLOAD, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${jwt}` },
-        body: buildForm(),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        if (text.includes("NO_SCOPES_FOUND") || res.status === 401 || res.status === 403) {
-          throw new Error(
-            "Your Pinata API key can't upload files (missing scopes). Create a key in Pinata " +
-            "with the Admin toggle (or Files: Write) enabled and set NEXT_PUBLIC_PINATA_JWT_1."
-          );
-        }
-        lastError = new Error(`Pinata error: ${res.status} - ${text}`);
-        continue;
-      }
-
-      const json = await res.json();
-      const cid = json?.data?.cid;
-      if (!cid) {
-        lastError = new Error("Pinata v3 response had no CID");
-        continue;
-      }
-      return `ipfs://${cid}`;
-    } catch (err) {
-      // A clear scopes error should bubble up immediately, not silently retry.
-      if ((err as Error).message?.includes("missing scopes")) throw err;
-      lastError = err as Error;
-      continue;
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    if (text.includes("NO_SCOPES_FOUND") || res.status === 401 || res.status === 403) {
+      throw new Error(
+        "Pinata rejected the upload (auth/scopes). Set a valid PINATA_JWT on the server " +
+        "with Files: Write (or Admin) enabled."
+      );
     }
+    throw new Error(`Pinata upload failed: ${res.status} - ${text}`);
   }
 
-  throw lastError || new Error("No Pinata keys configured");
+  const json = await res.json();
+  const cid = json?.data?.cid;
+  if (!cid) throw new Error("Pinata response had no CID");
+  return `ipfs://${cid}`;
 }
 
 export async function uploadToPinata(file: File): Promise<string> {
